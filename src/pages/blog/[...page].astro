@@ -1,0 +1,143 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import PageHead from '@/components/PageHead.astro'
+import PaginationComponent from '@/components/ui/pagination'
+import Link from '@/components/Link.astro'
+import { SITE } from '@/consts'
+import Layout from '@/layouts/Layout.astro'
+import { getAllPosts } from '@/lib/data-utils'
+import { Icon } from 'astro-icon/components'
+import type { PaginateFunction } from 'astro'
+import type { CollectionEntry } from 'astro:content'
+
+export async function getStaticPaths({
+  paginate,
+}: {
+  paginate: PaginateFunction
+}) {
+  const allPosts = await getAllPosts()
+  return paginate(allPosts, { pageSize: SITE.postsPerPage })
+}
+
+const { page } = Astro.props
+
+const iconMap: Record<string, string> = {
+  'Architektur': 'lucide:boxes',
+  'Service': 'lucide:server',
+  'Gateway': 'lucide:route',
+  'Sicherheit': 'lucide:shield',
+  'JWT': 'lucide:key',
+  'REST': 'lucide:globe',
+  'GraphQL': 'lucide:braces',
+  'gRPC': 'lucide:zap',
+  'RabbitMQ': 'lucide:radio',
+  'Frontend': 'lucide:monitor',
+  'Angular': 'lucide:monitor',
+  'PWA': 'lucide:smartphone',
+  'CLI': 'lucide:terminal',
+  'DevOps': 'lucide:container',
+  'Docker': 'lucide:container',
+  'Kubernetes': 'lucide:container',
+  'Rollen': 'lucide:shield',
+  'Datenbank': 'lucide:database',
+  'Berechnung': 'lucide:calculator',
+  'Fachlogik': 'lucide:calculator',
+  'Prozesse': 'lucide:git-branch',
+  'Übersicht': 'lucide:layout-dashboard',
+}
+
+const colorMap: Record<string, string> = {
+  'Architektur': 'text-blue-500 bg-blue-500/10',
+  'Service': 'text-orange-500 bg-orange-500/10',
+  'Gateway': 'text-orange-500 bg-orange-500/10',
+  'Sicherheit': 'text-red-500 bg-red-500/10',
+  'JWT': 'text-red-500 bg-red-500/10',
+  'REST': 'text-blue-500 bg-blue-500/10',
+  'GraphQL': 'text-pink-500 bg-pink-500/10',
+  'gRPC': 'text-amber-500 bg-amber-500/10',
+  'RabbitMQ': 'text-emerald-500 bg-emerald-500/10',
+  'Frontend': 'text-pink-500 bg-pink-500/10',
+  'Angular': 'text-pink-500 bg-pink-500/10',
+  'PWA': 'text-violet-500 bg-violet-500/10',
+  'CLI': 'text-emerald-500 bg-emerald-500/10',
+  'DevOps': 'text-cyan-500 bg-cyan-500/10',
+  'Docker': 'text-cyan-500 bg-cyan-500/10',
+  'Kubernetes': 'text-cyan-500 bg-cyan-500/10',
+  'Rollen': 'text-violet-500 bg-violet-500/10',
+  'Datenbank': 'text-emerald-500 bg-emerald-500/10',
+  'Berechnung': 'text-amber-500 bg-amber-500/10',
+  'Fachlogik': 'text-amber-500 bg-amber-500/10',
+  'Prozesse': 'text-blue-500 bg-blue-500/10',
+  'Übersicht': 'text-blue-500 bg-blue-500/10',
+}
+
+function getPostIcon(post: CollectionEntry<'blog'>) {
+  const tag = post.data.tags?.[0]
+  return tag ? (iconMap[tag] || 'lucide:file-text') : 'lucide:file-text'
+}
+
+function getPostColor(post: CollectionEntry<'blog'>) {
+  const tag = post.data.tags?.[0]
+  return tag ? (colorMap[tag] || 'text-muted-foreground bg-muted/50') : 'text-muted-foreground bg-muted/50'
+}
+---
+
+<Layout class="max-w-5xl">
+  <PageHead slot="head" title="Dokumentation" />
+  <Breadcrumbs
+    items={[
+      { label: 'Dokumentation', href: '/blog', icon: 'lucide:library-big' },
+    ]}
+  />
+
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold">Dokumentation</h1>
+    <p class="text-sm text-muted-foreground mt-1">Alle Komponenten des Gradify-Systems im Detail</p>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    {page.data.map((post) => {
+      const color = getPostColor(post)
+      const icon = getPostIcon(post)
+      const [iconText, iconBg] = color.split(' ')
+      return (
+        <Link
+          href={`/${post.collection}/${post.id}`}
+          class="group rounded-2xl border border-border/50 p-5 hover:border-primary/40 transition-all duration-200 block"
+        >
+          <div class="flex items-start gap-3 mb-3">
+            <div class={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center flex-shrink-0`}>
+              <Icon name={icon} class={`size-5 ${iconText}`} />
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">
+                {post.data.title}
+              </h3>
+            </div>
+          </div>
+          <p class="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+            {post.data.description}
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            {post.data.tags?.slice(0, 3).map((tag) => (
+              <span class={`text-[9px] font-medium px-1.5 py-0.5 rounded ${colorMap[tag] || 'text-muted-foreground bg-muted/50'}`}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        </Link>
+      )
+    })}
+  </div>
+
+  {page.lastPage > 1 && (
+    <div class="mt-8">
+      <PaginationComponent
+        currentPage={page.currentPage}
+        totalPages={page.lastPage}
+        baseUrl="/blog/"
+        client:idle
+      />
+    </div>
+  )}
+</Layout>

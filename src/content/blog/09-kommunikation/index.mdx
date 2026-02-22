@@ -1,0 +1,144 @@
+---
+title: 'Kommunikationsprotokolle'
+description: 'REST, GraphQL, gRPC und RabbitMQ: vier Protokolle für unterschiedliche Kommunikationsanforderungen.'
+date: 2026-02-13
+order: 9
+tags: ['Architektur', 'REST', 'GraphQL', 'gRPC', 'RabbitMQ']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Das Gradify-System nutzt **vier verschiedene Kommunikationsprotokolle**, die jeweils für ihren spezifischen Einsatzzweck optimiert sind:
+
+| Protokoll | Einsatz | Richtung |
+|-----------|---------|----------|
+| **REST** | CRUD-Operationen, Statusänderungen | Client ↔ Service |
+| **GraphQL** | Flexible Abfragen, Dashboards | Client ↔ Service (via Gateway) |
+| **gRPC** | Service-zu-Service Kommunikation | Service ↔ Service |
+| **RabbitMQ** | Asynchrone Events | Service → Service (Event-Bus) |
+
+## 1. REST
+
+REST ist der primäre Kommunikationsweg für Client-Server-Interaktionen.
+
+### Einheitliches Response-Format
+
+Alle Services nutzen `ApiResponse<T>`:
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Erfolgreich",
+  "timestamp": "2026-02-21T10:30:00"
+}
+```
+
+### HTTP-Statuscodes
+
+| Code | Bedeutung | Verwendung |
+|------|-----------|-----------|
+| 200 | OK | Erfolgreiche GET/PUT |
+| 201 | Created | Erfolgreiche POST |
+| 204 | No Content | Erfolgreiche DELETE |
+| 400 | Bad Request | Ungültige Eingabe |
+| 401 | Unauthorized | Token ungültig |
+| 403 | Forbidden | Keine Berechtigung |
+| 404 | Not Found | Ressource nicht gefunden |
+| 409 | Conflict | Datenkonflikt |
+| 422 | Unprocessable | Validierungsfehler |
+
+### Endpunkt-Übersicht
+
+| Service | Anzahl REST-Endpunkte | Hauptobjekte |
+|---------|----------------------|-------------|
+| Auth-Service | 6 | Login, Token, Validierung |
+| User-Service | 18 | Benutzer, Studenten, Rollen |
+| Studiengang-Service | 18 | Mandanten, Studiengänge, Module, Einschreibungen |
+| Noten-Service | 14 | Noten, Workflow, Audit |
+| Berechnungs-Service | 8 | Berechnungen, Fortschritt, Statistiken |
+
+## 2. GraphQL
+
+GraphQL wird über den API-Gateway bereitgestellt und ermöglicht flexible Datenabfragen.
+
+### Endpunkte
+
+| Service | GraphQL-Pfad | Queries | Mutations |
+|---------|-------------|---------|-----------|
+| User-Service | `/graphql/user` | 5 | 7 |
+| Studiengang-Service | `/graphql/studiengang` | 11 | 1 |
+| Noten-Service | `/graphql/noten` | 6 | 5 |
+
+### Beispiel-Query
+
+```graphql
+query StudentDashboard($einschreibungId: Long!) {
+  notenByStudent(einschreibungId: $einschreibungId) {
+    id
+    modulId
+    noteWert
+    status
+    pruefungsdatum
+  }
+  durchschnittsnote(einschreibungId: $einschreibungId)
+  bestandeneModule(einschreibungId: $einschreibungId)
+}
+```
+
+### Warum GraphQL zusätzlich zu REST?
+
+- **Dashboard-Abfragen** können mehrere Datenobjekte in einer Anfrage laden
+- **Reduzierte Netzwerklast:** Client bekommt nur die benötigten Felder
+- **Flexible Frontend-Entwicklung:** Neue Views ohne Backend-Änderungen
+
+## 3. gRPC
+
+gRPC wird für die **interne Service-zu-Service Kommunikation** eingesetzt, wo hohe Performance und typsichere Schnittstellen wichtig sind.
+
+### Protobuf-Definitionen
+
+Alle `.proto`-Dateien liegen im Shared-Module `gradify-shared`.
+
+### Service-Übersicht
+
+| gRPC-Service | Port | Implementierung | Aufrufer |
+|-------------|------|----------------|----------|
+| UserValidationService | 9082 | User-Service | Auth-Service |
+| StudentDataService | 9082 | User-Service | Studiengang-Service |
+| RegelwerkService | 9083 | Studiengang-Service | Berechnungs-Service |
+| NotenDataService | 9084 | Noten-Service | Berechnungs-Service |
+| BerechnungsService | 9085 | Berechnungs-Service | Intern |
+
+### Warum gRPC statt REST intern?
+
+- **Binäres Protokoll** (Protocol Buffers): deutlich schneller als JSON
+- **Typsichere Contracts:** Fehler werden zur Compile-Zeit erkannt
+- **Streaming-Support:** Effizient für große Datenmengen
+- **Code-Generierung:** Java-Klassen werden automatisch aus `.proto` erzeugt
+
+## 4. RabbitMQ (Message Queue)
+
+RabbitMQ dient als **asynchroner Event-Bus** für die Entkopplung von Noten- und Berechnungslogik.
+
+### Event-Flow
+
+```text
+Noten-Service                     Berechnungs-Service
+     │                                   │
+     ├── note.created ──────────────────► │
+     ├── note.updated ──────────────────► │
+     ├── note.validated ────────────────► │
+     ├── note.released ─────────────────► │
+     │                                   │
+     │                            Neuberechnung
+     │                            auslösen
+```
+
+### Vorteile der Message Queue
+
+1. **Entkopplung:** Noten-Service muss Berechnungs-Service nicht kennen
+2. **Resilienz:** Events gehen nicht verloren, wenn der Berechnungs-Service kurzzeitig nicht erreichbar ist
+3. **Skalierbarkeit:** Berechnungen können asynchron und parallel verarbeitet werden
+4. **Konsistenz:** Gesamtnote wird automatisch aktuell gehalten

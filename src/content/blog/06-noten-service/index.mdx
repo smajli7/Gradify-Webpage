@@ -1,0 +1,122 @@
+---
+title: 'Noten-Service'
+description: 'Notenerfassung, 3-stufiger Validierungs-Workflow (Erfasst → Validiert → Freigegeben), Audit-Logging und RabbitMQ-Events.'
+date: 2026-02-16
+order: 6
+tags: ['Service', 'REST', 'GraphQL', 'gRPC', 'RabbitMQ']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Der **Noten-Service** bildet den Kern der Notenverarbeitung. Er implementiert einen **3-stufigen Workflow** für die Notenerfassung und -freigabe, protokolliert alle Änderungen in einem Audit-Log und löst per **RabbitMQ** automatische Neuberechnungen aus.
+
+## 3-Stufiger Workflow
+
+```text
+  ERFASST ──────► VALIDIERT ──────► FREIGEGEBEN
+     │                │
+     │                │ (Ablehnung)
+     │                ▼
+     │            ERFASST
+     │         (zurück zur Korrektur)
+     │
+     ▼
+  STORNIERT
+```
+
+| Status | Beschreibung | Wer? |
+|--------|-------------|------|
+| **ERFASST** | Note wurde eingetragen | Lehrender |
+| **VALIDIERT** | Note wurde geprüft | Prüfungsamt |
+| **FREIGEGEBEN** | Note ist endgültig sichtbar | Prüfungsamt |
+| **STORNIERT** | Note wurde storniert | Admin/Prüfungsamt |
+
+## Technologie
+
+- **Port (HTTP):** 8084
+- **Port (gRPC):** 9084
+- **Datenbanken:** `gradify_noten_{kuerzel}` (pro Mandant)
+- **Message Queue:** RabbitMQ (Events bei Notenänderungen)
+
+## REST-Endpunkte
+
+### Noten CRUD
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/noten` | Noten (opt: `einschreibungId`, `modulId`, `status`) |
+| `GET` | `/api/noten/{id}` | Einzelne Note |
+| `GET` | `/api/noten/einschreibung/{id}` | Noten einer Einschreibung |
+| `GET` | `/api/noten/modul/{modulId}` | Noten eines Moduls |
+| `POST` | `/api/noten` | Note erfassen |
+| `PUT` | `/api/noten/{id}` | Note korrigieren |
+| `DELETE` | `/api/noten/{id}` | Note stornieren |
+
+### Workflow
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `POST` | `/api/noten/{id}/validate` | Note validieren |
+| `POST` | `/api/noten/{id}/release` | Note freigeben |
+| `POST` | `/api/noten/{id}/reject` | Note ablehnen (zurück zu ERFASST) |
+
+### Statistiken & Export
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/noten/stats` | Statistiken (opt: `modulIds`) |
+| `GET` | `/api/noten/gueltige-noten` | Gültige Notenwerte |
+| `GET` | `/api/noten/audit` | Audit-Log (viele Filter) |
+| `GET` | `/api/noten/export/{id}` | CSV-Export |
+
+## GraphQL-Schema (`/graphql/noten`)
+
+**Queries:**
+- `noten(einschreibungId, modulId)`: Noten filtern
+- `note(id)`: Einzelne Note
+- `notenByStudent(einschreibungId)`: Alle Noten eines Studenten
+- `notenByModul(modulId)`: Alle Noten eines Moduls
+- `durchschnittsnote(einschreibungId)`: Durchschnitt
+- `bestandeneModule(einschreibungId)`: Bestandene Module
+
+**Mutations:**
+- `createNote`, `updateNote`: CRUD
+- `validateNote`, `releaseNote`, `deleteNote`: Workflow
+
+## gRPC-Service (Port 9084)
+
+### NotenDataService
+Aufrufer: **Berechnungs-Service**
+
+| Methode | Beschreibung |
+|---------|-------------|
+| `GetNotenFuerBerechnung` | Freigegebene Noten für Berechnung |
+
+## RabbitMQ-Events
+
+Bei jeder Notenänderung werden Events publiziert:
+
+| Event | Auslöser | Konsument |
+|-------|----------|-----------|
+| `note.created` | Neue Note erfasst | Berechnungs-Service |
+| `note.updated` | Note geändert | Berechnungs-Service |
+| `note.validated` | Note validiert | Berechnungs-Service |
+| `note.released` | Note freigegeben | Berechnungs-Service |
+
+## Datenmodell
+
+### Note
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| noteWert | Decimal(2,1) | 1,0 – 5,0 (Notenskala) |
+| bestanden | Boolean | Bei bestanden/nicht bestanden |
+| versuch | int | Prüfungsversuch (1–4) |
+| status | Enum | ERFASST, VALIDIERT, FREIGEGEBEN |
+| erfasstVon | Long | Erfassender Benutzer |
+| validiertVon | Long | Validierender Benutzer |
+
+### NotenHistorie (Audit-Log)
+
+Jede Statusänderung und Notenwertänderung wird mit altem und neuem Wert, änderndem Benutzer und Zeitstempel protokolliert.

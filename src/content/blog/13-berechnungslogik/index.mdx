@@ -1,0 +1,131 @@
+---
+title: 'Berechnungslogik'
+description: 'Gesamtnotenberechnung nach Prüfungsordnung: gewichtete Summe (BVT) und arithmetisch gemischt (FSA) mit Beispielrechnungen.'
+date: 2026-02-09
+order: 13
+tags: ['Berechnung', 'Fachlogik']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Die Gesamtnotenberechnung richtet sich nach der jeweiligen **Prüfungsordnung (PO)**. Gradify unterstützt zwei Berechnungsarten:
+
+1. **Gewichtete Summe:** Bioverfahrenstechnik (Bachelor)
+2. **Arithmetisch gemischt:** Forschung in der Sozialen Arbeit (Master)
+
+## Allgemeine Regeln
+
+### Notenskala
+
+Zulässige Werte: **1,0 / 1,3 / 1,7 / 2,0 / 2,3 / 2,7 / 3,0 / 3,3 / 3,7 / 4,0 / 5,0**
+
+Bestanden: Note ≤ 4,0
+
+### Rundung
+
+Kaufmännisch auf eine Dezimalstelle:
+- 2,44 → **2,4** (abrunden)
+- 2,45 → **2,5** (aufrunden)
+
+### Wiederholungen
+
+| Regel | Bachelor (BVT) | Master (FSA) |
+|-------|---------------|-------------|
+| Maximale Versuche | 3 (+1 auf Antrag) | 3 (+1 auf Antrag) |
+| Abschlussarbeit | 1 Wiederholung | 1 Wiederholung |
+
+## Bioverfahrenstechnik (Bachelor)
+
+**Rechtsgrundlage:** § 11 Bildung der Gesamtnote (PO 2023)
+
+### Formel
+
+$$
+\text{Gesamtnote} = \frac{\sum_{i} (\text{Note}_i \times \text{Gewichtung}_i)}{\sum_{i} \text{Gewichtung}_i}
+$$
+
+Nur Module mit Bewertungsart „NOTE" und Gewichtung > 0 werden berücksichtigt.
+
+### Modulliste (Auszug)
+
+| Nr | Modul | ECTS | Gew. | In Berechnung |
+|----|-------|------|------|:-------------:|
+| 1 | Einf. Bioverfahrenstechnik | 5 | 0 | - |
+| 2 | Technische Mechanik | 5 | 1 | x |
+| 4 | Mathematik 1 | 10 | 2 | x |
+| 31 | Teamprojekt | 10 | 2 | x |
+| 32 | Praxisphase | 30 | 5 | x |
+| 33 | Bachelor-Arbeit mit Kolloquium | 15 | **9** | x |
+
+**Summe Gewichtungen:** 46 (Modul 1 ausgenommen)
+
+### Beispielrechnung
+
+$$
+\text{Gesamtnote} = \frac{67{,}5}{46} = 1{,}467... \approx \mathbf{1{,}5}
+$$
+
+## Forschung in der Sozialen Arbeit (Master)
+
+**Rechtsgrundlage:** § 9 Bildung der Gesamtnote (PO 2022)
+
+### Formel
+
+$$
+\text{Gesamtnote} = \frac{2 \times \text{Note}_{\text{Thesis}} + 1 \times \text{Modulmittel}}{3}
+$$
+
+Das Modulmittel ist das **arithmetische Mittel** der 7 benoteten Module (ohne Thesis):
+
+$$
+\text{Modulmittel} = \frac{\text{Note}_1 + \text{Note}_2 + ... + \text{Note}_8}{7}
+$$
+
+### Modulliste
+
+| Nr | Modul | ECTS | Relevanz |
+|----|-------|------|----------|
+| 1 | Paradigmatische Grundlegung | 10 | Modulmittel |
+| 2 | Quantitative Forschungsmethoden | 10 | Modulmittel |
+| 3 | Statistik I | 5 | Modulmittel |
+| 4 | Qualitativ-rekonstruktive Methoden | 10 | Modulmittel |
+| 5 | Forschungsprojekt (Wahl) | 30 | Modulmittel |
+| 6 | Aktuelle Forschungen | 5 | bestanden/nicht bestanden |
+| 7 | Statistik II | 5 | Modulmittel |
+| 8 | Forschungsfelder (Wahl) | 5 | Modulmittel |
+| 9–11 | Vertiefung/Werkstatt/Planung | je 5 | bestanden/nicht bestanden |
+| 12 | **Master-Thesis** | 25 | **Gewichtung ×2** |
+
+### Beispielrechnung
+
+**Schritt 1, Modulmittel:**
+
+$$
+\text{Modulmittel} = \frac{1{,}7 + 2{,}0 + 2{,}3 + 1{,}3 + 1{,}7 + 2{,}0 + 1{,}7}{7} = 1{,}814...
+$$
+
+**Schritt 2, Gesamtnote:**
+
+$$
+\text{Gesamtnote} = \frac{2 \times 1{,}3 + 1{,}814}{3} = 1{,}471... \approx \mathbf{1{,}5}
+$$
+
+## Vergleich
+
+| Aspekt | BVT (Bachelor) | FSA (Master) |
+|--------|---------------|-------------|
+| Berechnungsart | Gewichtete Summe | Arithmetisch gemischt |
+| Module gesamt | 33 | 12 |
+| Module ohne Note | 1 | 4 |
+| Max. Gewichtung | 9 (BA-Arbeit) | 2 (Thesis) |
+| Gesamtgewicht | 46 | 3 |
+
+## Validierungsregeln
+
+1. Notenwert im Bereich 1,0 – 5,0
+2. Nur definierte Notenstufen zulässig
+3. Bei „bestanden/nicht bestanden": nur für passende Module
+4. Prüfungsversuch ≤ 4
+5. Nur bestandene Module in Berechnung
+6. Module mit Gewichtung 0 ausgeschlossen

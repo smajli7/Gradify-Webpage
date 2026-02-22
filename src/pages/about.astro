@@ -1,0 +1,264 @@
+---
+import Breadcrumbs from '@/components/Breadcrumbs.astro'
+import Link from '@/components/Link.astro'
+import PageHead from '@/components/PageHead.astro'
+import Layout from '@/layouts/Layout.astro'
+import { Icon } from 'astro-icon/components'
+import { SITE } from '@/consts'
+
+const reflexion = [
+  {
+    title: 'Was lief gut?',
+    icon: 'lucide:thumbs-up',
+    color: 'from-emerald-500/20 to-emerald-500/5',
+    iconColor: 'text-emerald-500',
+    border: 'border-emerald-500/20',
+    text: 'Die Aufgabenverteilung und Planung haben sehr gut funktioniert. Auch die Kommunikation war sehr gut, wir haben vor allem über Discord und persönlich gesprochen. Die Aufteilung der Commits hat gut geklappt, niemand musste auf den anderen warten oder Aufgaben übernehmen, die er oder sie nicht machen wollte. Besonders stolz sind wir auf unsere Ideen und darauf, wie wir das Projekt gemeinsam vorangetrieben haben.',
+  },
+  {
+    title: 'Was war herausfordernd?',
+    icon: 'lucide:mountain',
+    color: 'from-amber-500/20 to-amber-500/5',
+    iconColor: 'text-amber-500',
+    border: 'border-amber-500/20',
+    text: 'Herausfordernd war vor allem, beim Programmieren immer gute Lösungen zu finden. Dabei hat uns KI in der heutigen Zeit sehr geholfen. Schwer war auch die Aufteilung zwischen Backend und Frontend sowie die Durchführung und Koordination der Tests.',
+  },
+  {
+    title: 'Welche Rollenverteilung war effektiv?',
+    icon: 'lucide:users',
+    color: 'from-blue-500/20 to-blue-500/5',
+    iconColor: 'text-blue-500',
+    border: 'border-blue-500/20',
+    text: 'Wir haben keine starren Rollen vergeben, sondern alle Aufgaben gemeinsam geplant und die Commits unter uns aufgeteilt. So hat jeder in allen Bereichen mitgearbeitet und wir haben uns je nach Thema und Verfügbarkeit abgewechselt. Das hat sich als sehr effektiv erwiesen.',
+  },
+  {
+    title: 'Was sollte im nächsten Projekt anders gemacht werden?',
+    icon: 'lucide:arrow-right-circle',
+    color: 'from-violet-500/20 to-violet-500/5',
+    iconColor: 'text-violet-500',
+    border: 'border-violet-500/20',
+    text: 'Eigentlich wenig. Vielleicht würden wir nur die Datentypen und die Datenbank-Entscheidungen von Anfang an noch genauer planen, damit spätere Anpassungen seltener nötig werden.',
+  },
+]
+
+const teamSkills = [
+  'Backend-Services',
+  'Frontend',
+  'Architektur',
+  'Deployment',
+  'Authentifizierung',
+  'Berechnungslogik',
+  'Noten-Workflow',
+  'Rollen & Rechte',
+  'Testing',
+  'Dokumentation',
+]
+
+const studiengaenge = [
+  { name: 'Bioverfahrenstechnik', abschluss: 'Bachelor of Engineering', ects: '210', semester: '7 Semester', module: '33 Module', note: 'Gewichtet', icon: 'lucide:flask-conical', bg: 'bg-emerald-500/10', text: 'text-emerald-500' },
+  { name: 'Forschung Soziale Arbeit', abschluss: 'Master of Arts', ects: '120', semester: '4 Semester', module: '12 Module', note: 'Arithmetisch', icon: 'lucide:book-heart', bg: 'bg-blue-500/10', text: 'text-blue-500' },
+  { name: 'Bioinformatik', abschluss: 'Bachelor of Science', ects: '180', semester: '6 Semester', module: 'Module', note: 'Gewichtet', icon: 'lucide:dna', bg: 'bg-violet-500/10', text: 'text-violet-500' },
+]
+
+const pflicht = [
+  'Verteilte Microservices (nicht monolithisch) mit eigener Datenhaltung',
+  'Kommunikation über REST, GraphQL und gRPC',
+  'Nicht-grafisches UI (PowerShell CLI)',
+]
+
+const bonus = [
+  'API-Gateway (Spring Cloud Gateway)',
+  'Authentifizierungs-Service (JWT)',
+  'Message Queue (RabbitMQ)',
+  'Grafische UI (Angular SPA + PWA)',
+  'Docker + Kubernetes Deployment',
+]
+---
+<Layout class="max-w-4xl">
+  <PageHead slot="head" title="Team & Projekt" />
+  <Breadcrumbs items={[{ label: 'Team & Projekt', icon: 'lucide:users' }]} />
+
+  <section class="flex flex-col gap-10">
+    <!-- Header -->
+    <div>
+      <h1 class="text-3xl md:text-4xl font-bold">Team Gradify</h1>
+      <p class="text-sm text-muted-foreground mt-2">
+        Frankfurt University of Applied Sciences | Web-basierte Anwendungssysteme | WiSe 2025/26
+      </p>
+    </div>
+
+    <!-- Team Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-2xl border border-border/50 overflow-hidden">
+        <div class="h-2 bg-gradient-to-r from-orange-500 to-amber-500" aria-hidden="true"></div>
+        <div class="p-6 space-y-5">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/10 flex items-center justify-center text-xl font-bold text-orange-500 border border-orange-500/20">
+              JN
+            </div>
+            <div>
+              <h3 class="font-semibold text-lg">Jakub Naruszko</h3>
+              <p class="text-xs text-muted-foreground font-mono">1511408</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            {teamSkills.map((skill) => (
+              <div class="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                <Icon name="lucide:server" class="size-3.5 text-orange-500/70 flex-shrink-0" />
+                <span>{skill}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-border/50 overflow-hidden">
+        <div class="h-2 bg-gradient-to-r from-violet-500 to-purple-500" aria-hidden="true"></div>
+        <div class="p-6 space-y-5">
+          <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/10 flex items-center justify-center text-xl font-bold text-violet-500 border border-violet-500/20">
+              LB
+            </div>
+            <div>
+              <h3 class="font-semibold text-lg">Louisa Kristin Bahr</h3>
+              <p class="text-xs text-muted-foreground font-mono">1508628</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            {teamSkills.map((skill) => (
+              <div class="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                <Icon name="lucide:server" class="size-3.5 text-violet-500/70 flex-shrink-0" />
+                <span>{skill}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teamwork -->
+    <div class="rounded-2xl border border-primary/20 bg-primary/5 p-6 md:p-8">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+          <Icon name="lucide:handshake" class="size-4.5 text-primary" />
+        </div>
+        <h2 class="font-semibold text-lg">Gleichberechtigte Zusammenarbeit</h2>
+      </div>
+      <p class="text-sm text-muted-foreground leading-relaxed mb-5">
+        Alle Bereiche des Projekts wurden <strong class="text-foreground">gemeinsam bearbeitet</strong>.
+        Beide Teammitglieder haben gleichermaßen an Architektur, Implementierung,
+        Code-Reviews, Testing und Dokumentation mitgewirkt.
+      </p>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="text-center rounded-xl bg-background/60 p-3 border border-border/30">
+          <div class="text-lg font-bold text-primary">50/50</div>
+          <div class="text-[10px] text-muted-foreground mt-0.5">Arbeitsverteilung</div>
+        </div>
+        <div class="text-center rounded-xl bg-background/60 p-3 border border-border/30">
+          <div class="text-lg font-bold text-primary">7</div>
+          <div class="text-[10px] text-muted-foreground mt-0.5">Services gemeinsam</div>
+        </div>
+        <div class="text-center rounded-xl bg-background/60 p-3 border border-border/30">
+          <div class="text-lg font-bold text-primary">Wöchentlich</div>
+          <div class="text-[10px] text-muted-foreground mt-0.5">Statusmeetings</div>
+        </div>
+        <div class="text-center rounded-xl bg-background/60 p-3 border border-border/30">
+          <div class="text-lg font-bold text-primary">Pair</div>
+          <div class="text-[10px] text-muted-foreground mt-0.5">Programming</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reflexion -->
+    <div id="reflexion">
+      <h2 class="text-xl font-semibold mb-1">Reflexion</h2>
+      <p class="text-sm text-muted-foreground mb-6">
+        Kurze Rückschau auf die Teamarbeit und das Projekt (empfohlene Leitfragen des Moduls).
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {reflexion.map((item) => (
+          <div
+            class={`rounded-2xl border ${item.border} overflow-hidden bg-gradient-to-br ${item.color} transition-colors hover:border-opacity-50`}
+          >
+            <div class="p-5 md:p-6">
+              <div class="flex items-start gap-3">
+                <div class={`w-10 h-10 rounded-xl bg-background/60 border ${item.border} flex items-center justify-center flex-shrink-0`}>
+                  <Icon name={item.icon} class={`size-5 ${item.iconColor}`} />
+                </div>
+                <div class="min-w-0 flex-1">
+                  <h3 class="font-semibold text-sm text-foreground mb-2">{item.title}</h3>
+                  <p class="text-xs text-muted-foreground leading-relaxed">{item.text}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Aufgabenstellung -->
+    <div>
+      <h2 class="text-xl font-semibold mb-4">Aufgabenstellung</h2>
+      <div class="rounded-2xl border border-border/50 p-6 space-y-3">
+        <p class="text-sm text-muted-foreground leading-relaxed">
+          Entwickelt im Rahmen des Moduls <strong class="text-foreground">Web-basierte Anwendungssysteme</strong> bei
+          <strong class="text-foreground"> Prof. Lehmann</strong>. Es soll ein web-basiertes Anwendungssystem für Hochschulen entstehen,
+          mit dem Studierende verwaltet, Noten erfasst und validiert, Gesamtnoten berechnet werden und
+          verschiedene Nutzerrollen mit unterschiedlichen Berechtigungen existieren.
+        </p>
+      </div>
+    </div>
+
+    <!-- Studiengänge -->
+    <div>
+      <h2 class="text-xl font-semibold mb-4">Unterstützte Studiengänge</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {studiengaenge.map((s) => (
+          <div class="rounded-2xl border border-border/50 p-5 hover:border-primary/30 transition-colors">
+            <div class="flex items-center gap-2.5 mb-3">
+              <div class={`w-8 h-8 rounded-lg ${s.bg} flex items-center justify-center`}>
+                <Icon name={s.icon} class={`size-4 ${s.text}`} />
+              </div>
+              <h3 class="font-semibold text-sm">{s.name}</h3>
+            </div>
+            <div class="space-y-1.5 text-xs text-muted-foreground">
+              <p>{s.abschluss}</p>
+              <div class="flex items-center justify-between">
+                <span>{s.ects} ECTS</span>
+                <span class="text-foreground font-medium">{s.semester}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>{s.module}</span>
+                <span class={`${s.text} text-[10px] font-medium`}>{s.note}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Anforderungsabdeckung -->
+    <div>
+      <h2 class="text-xl font-semibold mb-4">Anforderungsabdeckung</h2>
+      <div class="space-y-2">
+        {pflicht.map((item) => (
+          <div class="flex items-center gap-3 rounded-xl border border-border/50 p-3.5 bg-muted/20">
+            <div class="w-6 h-6 rounded-full bg-additive/15 flex items-center justify-center flex-shrink-0">
+              <Icon name="lucide:check" class="size-3.5 text-additive" />
+            </div>
+            <span class="text-sm">{item}</span>
+          </div>
+        ))}
+        <div class="text-[10px] text-muted-foreground uppercase tracking-wider mt-4 mb-2 pl-1 font-medium">Bonus-Anforderungen</div>
+        {bonus.map((item) => (
+          <div class="flex items-center gap-3 rounded-xl border border-primary/20 p-3.5 bg-primary/5">
+            <div class="w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+              <Icon name="lucide:star" class="size-3.5 text-primary" />
+            </div>
+            <span class="text-sm font-medium">{item}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+</Layout>

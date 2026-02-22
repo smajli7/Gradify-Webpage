@@ -1,0 +1,93 @@
+---
+title: 'Systemübersicht & Architektur'
+description: 'Gesamtarchitektur des Gradify-Systems mit 7 Microservices, Kommunikationsprotokollen und Datenbankstrategie.'
+date: 2026-02-21
+order: 1
+tags: ['Architektur', 'Übersicht']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+**Gradify** ist ein verteiltes Notenverwaltungssystem für Hochschulen, aufgebaut als Microservice-Architektur mit **7 unabhängigen Services**. Jeder Service hat seine eigene Datenhaltung und kommuniziert über verschiedene Protokolle.
+
+## Architekturdiagramm
+
+```text
+                    ┌──────────────┐
+                    │    Client    │
+                    │  (Browser /  │
+                    │  PowerShell) │
+                    └──────┬───────┘
+                           │
+                    ┌──────▼───────┐
+                    │  API-Gateway │
+                    │   (8080)     │
+                    └──────┬───────┘
+                           │
+          ┌────────────────┼────────────────────┐
+          │                │                    │
+    ┌─────▼─────┐   ┌─────▼─────┐   ┌─────────▼─────────┐
+    │   Auth    │   │   User    │   │   Studiengang     │
+    │  Service  │   │  Service  │   │    Service        │
+    │  (8081)   │   │ (8082/    │   │  (8083/9083)      │
+    │           │   │  9082)    │   │                   │
+    └───────────┘   └───────────┘   └───────────────────┘
+          │                │                    │
+          │ gRPC           │ gRPC               │ gRPC
+          ▼                ▼                    ▼
+    ┌─────────────┐ ┌─────────────┐  ┌─────────────────┐
+    │   Noten     │ │ Berechnungs │  │   RabbitMQ      │
+    │  Service    │ │  Service    │◄─┤  (Event-Bus)    │
+    │(8084/9084)  │ │(8085/9085)  │  │                 │
+    └─────────────┘ └─────────────┘  └─────────────────┘
+
+    ┌─────────────┐
+    │  Frontend   │
+    │  Angular    │
+    │  (4200)     │
+    └─────────────┘
+```
+
+## Service-Übersicht
+
+| Service | HTTP-Port | gRPC-Port | Verantwortung |
+|---------|-----------|-----------|---------------|
+| **API-Gateway** | 8080 | - | Zentraler Eintrittspunkt, Routing, CORS |
+| **Auth-Service** | 8081 | - | Login, JWT-Token-Management |
+| **User-Service** | 8082 | 9082 | Benutzerverwaltung, Rollen, Studenten |
+| **Studiengang-Service** | 8083 | 9083 | Mandanten, Studiengänge, Module, POs |
+| **Noten-Service** | 8084 | 9084 | Notenerfassung, Validierung, Freigabe |
+| **Berechnungs-Service** | 8085 | 9085 | Gesamtnotenberechnung nach PO |
+| **Frontend** | 4200 | - | Angular SPA + PWA |
+
+## Kommunikationsprotokolle
+
+Das System nutzt **vier verschiedene Kommunikationswege**:
+
+- **REST:** CRUD-Operationen, Statusänderungen (Client ↔ Services)
+- **GraphQL:** Flexible Abfragen für Dashboards (Client ↔ Services via Gateway)
+- **gRPC:** Service-zu-Service Kommunikation (intern, hochperformant)
+- **RabbitMQ:** Asynchrone Events (Notenänderung → Neuberechnung)
+
+## Datenbank-Strategie
+
+Jeder Service besitzt **eigene PostgreSQL-Datenbanken**. Multi-Tenancy wird durch mandantenspezifische Datenbanken realisiert:
+
+| Service | Zentrale DB | Mandanten-DBs |
+|---------|-------------|---------------|
+| Auth | `gradify_auth` | - |
+| User | `gradify_user` | - |
+| Studiengang | - | `gradify_studiengang_{kuerzel}` |
+| Noten | - | `gradify_noten_{kuerzel}` |
+| Berechnung | - | `gradify_berechnung_{kuerzel}` |
+
+Beispiel: Für den Mandanten "THM" gibt es `gradify_studiengang_thm`, `gradify_noten_thm`, `gradify_berechnung_thm`.
+
+## Kernfunktionen
+
+1. **Studierendenverwaltung:** Einschreibung, Statusverfolgung, CSV-Import/Export
+2. **Notenerfassung:** 3-stufiger Workflow: Erfasst → Validiert → Freigegeben
+3. **Gesamtnotenberechnung:** Automatisch nach PO-Regeln, ereignisgesteuert
+4. **Rollenbasierte Zugriffskontrolle:** 5 Rollen mit abgestuften Berechtigungen
+5. **Multi-Tenancy:** Mehrere Hochschulen mit getrennten Datenbanken

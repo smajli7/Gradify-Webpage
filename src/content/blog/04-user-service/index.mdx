@@ -1,0 +1,118 @@
+---
+title: 'User-Service'
+description: 'Benutzerverwaltung, Rollenzuweisung, Studentendaten und CSV-Import/Export mit REST, GraphQL und gRPC.'
+date: 2026-02-18
+order: 4
+tags: ['Service', 'REST', 'GraphQL', 'gRPC']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Der **User-Service** verwaltet alle Benutzer, Rollen und Studentendaten. Er bietet drei Kommunikationsschnittstellen: **REST**, **GraphQL** und **gRPC**.
+
+## Kernfunktionen
+
+- **Benutzerverwaltung:** CRUD-Operationen für Benutzer
+- **Rollenverwaltung:** Zuweisung und Entzug von Rollen
+- **Studentenverwaltung:** Matrikelnummer, Geburtsdatum, Status
+- **CSV-Import/Export:** Massenverarbeitung von Benutzerdaten
+- **Audit-Logging:** Protokollierung aller Änderungen
+
+## Technologie
+
+- **Port (HTTP):** 8082
+- **Port (gRPC):** 9082
+- **Datenbank:** `gradify_user` (PostgreSQL)
+
+## REST-Endpunkte
+
+### Benutzer
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/users` | Alle Benutzer (opt: `mandantId`) |
+| `GET` | `/api/users/{id}` | Benutzer nach ID |
+| `GET` | `/api/users/username/{name}` | Benutzer nach Username |
+| `POST` | `/api/users` | Benutzer erstellen |
+| `PUT` | `/api/users/{id}` | Benutzer aktualisieren |
+| `DELETE` | `/api/users/{id}` | Benutzer deaktivieren (Soft-Delete) |
+| `POST` | `/api/users/{id}/roles/{roleId}` | Rolle zuweisen |
+| `DELETE` | `/api/users/{id}/roles/{roleId}` | Rolle entziehen |
+| `GET` | `/api/users/roles` | Alle Rollen |
+| `GET` | `/api/users/audit` | Audit-Log |
+| `GET` | `/api/users/export` | CSV-Export |
+| `POST` | `/api/users/import` | CSV-Import |
+
+### Studenten
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/students` | Alle Studenten (opt: `mandantId`) |
+| `GET` | `/api/students/{id}` | Student nach ID |
+| `GET` | `/api/students/matrikel/{nr}` | Student nach Matrikelnummer |
+| `POST` | `/api/students` | Student erstellen |
+| `PUT` | `/api/students/{id}` | Student aktualisieren |
+| `DELETE` | `/api/students/{id}` | Student deaktivieren |
+
+## GraphQL-Schema (`/graphql/user`)
+
+**Queries:**
+- `users`: Alle Benutzer
+- `user(id: Long!)`: Einzelner Benutzer
+- `students`: Alle Studenten
+- `student(id: Long!)`: Einzelner Student
+- `studentByMatrikel(matrikelnummer: String!)`: Student nach Matrikelnummer
+
+**Mutations:**
+- `createUser(input: UserInput!)`: Benutzer anlegen
+- `updateUser(id: Long!, input: UserInput!)`: Benutzer ändern
+- `deleteUser(id: Long!)`: Benutzer löschen
+- `assignRole(userId: Long!, roleId: Long!)`: Rolle zuweisen
+- `removeRole(userId: Long!, roleId: Long!)`: Rolle entziehen
+- `createStudent(input: StudentInput!)`: Student anlegen
+- `updateStudent(id: Long!, input: StudentInput!)`: Student ändern
+
+## gRPC-Services (Port 9082)
+
+### UserValidationService
+Aufrufer: **Auth-Service**
+
+| Methode | Beschreibung |
+|---------|-------------|
+| `ValidateCredentials` | Login-Daten prüfen |
+| `GetUserById` | Benutzer nach ID |
+| `GetUserByUsername` | Benutzer nach Username |
+
+### StudentDataService
+Aufrufer: **Studiengang-Service**
+
+| Methode | Beschreibung |
+|---------|-------------|
+| `StudentExists` | Existenz prüfen |
+| `GetStudent` | Einzelner Student |
+| `GetStudentsByIds` | Mehrere Studenten |
+| `GetStudentsByStudiengang` | Studenten eines Studiengangs |
+
+## Datenmodell
+
+### Benutzer
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| id | Long | Primärschlüssel |
+| benutzername | String(50) | Login-Name (unique) |
+| email | String(100) | E-Mail (unique) |
+| passwortHash | String | BCrypt-Hash |
+| vorname / nachname | String(50) | Name |
+| mandantId | Long | Zugehöriger Mandant |
+| aktiv | boolean | Soft-Delete-Status |
+| rollen | Set\<Rolle\> | n:m-Beziehung |
+
+### Student (erweitert Benutzer)
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| matrikelnummer | String(20) | Unique |
+| geburtsdatum | LocalDate | Geburtsdatum |
+| status | Enum | AKTIV, BEURLAUBT, EXMATRIKULIERT |

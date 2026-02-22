@@ -1,0 +1,114 @@
+---
+title: 'Studiengang-Service'
+description: 'Mandanten, Studiengänge, Module, Prüfungsordnungen und Einschreibungen. Der zentrale Stammdaten-Service.'
+date: 2026-02-17
+order: 5
+tags: ['Service', 'REST', 'GraphQL', 'gRPC']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Der **Studiengang-Service** verwaltet die gesamte Studienstruktur: Mandanten (Hochschulen), Studiengänge, Module, Prüfungsordnungen und Einschreibungen. Er ist die zentrale Quelle für Stammdaten und stellt Regelwerke per **gRPC** bereit.
+
+## Kernfunktionen
+
+- **Mandantenverwaltung:** Hochschulen/Fakultäten als Mandanten
+- **Studiengangsverwaltung:** Bachelor/Master mit Regelstudiensemester und ECTS
+- **Modulverwaltung:** Module mit Gewichtung, Prüfungsform, ECTS
+- **Prüfungsordnungen:** Versionen mit Berechnungsregeln
+- **Einschreibungen:** Student-Studiengang-Zuordnungen
+- **Dozenten-Modul-Zuweisungen:** Welcher Dozent prüft welches Modul
+
+## Technologie
+
+- **Port (HTTP):** 8083
+- **Port (gRPC):** 9083
+- **Datenbanken:** `gradify_studiengang_{kuerzel}` (pro Mandant)
+
+## REST-Endpunkte
+
+### Mandanten
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/mandanten` | Alle Mandanten |
+| `GET` | `/api/mandanten/{id}` | Mandant nach ID |
+| `POST` | `/api/mandanten` | Mandant erstellen |
+
+### Studiengänge
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/studiengaenge` | Alle (opt: `mandantId`) |
+| `GET` | `/api/studiengaenge/{id}` | Nach ID |
+| `GET` | `/api/studiengaenge/kuerzel/{k}` | Nach Kürzel |
+| `POST` | `/api/studiengaenge` | Erstellen |
+| `GET` | `/api/studiengaenge/{id}/module` | Module des Studiengangs |
+| `GET` | `/api/studiengaenge/{id}/pruefungsordnungen` | POs des Studiengangs |
+
+### Module
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/studiengaenge/module/{modulId}` | Modul nach ID |
+| `GET` | `/api/studiengaenge/po/{poId}/module` | Module einer PO |
+
+### Einschreibungen
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/einschreibungen` | Alle (opt: `studentId`, `studiengangId`) |
+| `GET` | `/api/einschreibungen/{id}` | Nach ID |
+| `POST` | `/api/einschreibungen` | Erstellen |
+| `POST` | `/api/einschreibungen/{id}/abschliessen` | Abschließen |
+| `POST` | `/api/einschreibungen/{id}/abbrechen` | Abbrechen |
+| `POST` | `/api/einschreibungen/{id}/semester` | Semester hochzählen |
+
+### Modul-Zuweisungen
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `POST` | `/api/module-zuweisungen` | Dozent → Modul zuweisen |
+| `DELETE` | `/api/module-zuweisungen` | Zuweisung entfernen |
+| `GET` | `/api/module-zuweisungen/audit` | Audit-Log |
+
+### Import/Export
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `POST` | `/api/import/studiengaenge` | CSV-Import |
+| `GET` | `/api/import/template` | Import-Vorlage |
+| `GET` | `/api/import/export/studiengaenge` | CSV-Export |
+
+## GraphQL-Schema (`/graphql/studiengang`)
+
+**Queries:**
+- `mandanten`, `mandant(id)`: Mandantendaten
+- `studiengaenge(mandantId)`, `studiengang(id)`, `studiengangByKuerzel(kuerzel)`: Studiengänge
+- `module(studiengangId, poId)`, `modul(id)`: Module
+- `dozentenModule(dozentId)`: Module eines Dozenten
+- `einschreibungen(studentId, studiengangId)`, `einschreibung(id)`: Einschreibungen
+- `wahlpflichtWahlen(einschreibungId)`: Wahlpflichtmodul-Wahlen
+
+**Mutations:**
+- `setWahlpflichtWahl(einschreibungId, wahlpflichtGruppe, modulId)`: Wahlpflicht wählen
+
+## gRPC-Service (Port 9083)
+
+### RegelwerkService
+Aufrufer: **Berechnungs-Service**
+
+| Methode | Beschreibung |
+|---------|-------------|
+| `GetRegelwerk` | Berechnungsregeln einer PO laden |
+| `GetModulGewichtungen` | Modulgewichtungen abfragen |
+| `GetEinschreibungDetails` | Einschreibungsdaten |
+
+## Datenmodell-Highlights
+
+- **Mandant:** name, kuerzel (unique), aktiv
+- **Studiengang:** name, kuerzel, abschlussart (BACHELOR/MASTER), regelstudienzeit, gesamtEcts
+- **Prüfungsordnung:** version, gueltigAb/Bis, berechnungsart (GEWICHTET/ARITHMETISCH_GEMISCHT)
+- **Modul:** modulNr, name, ects, gewichtung, pruefungsform, bewertungsart, modultyp (PFLICHT/WAHLPFLICHT/ZUSATZ)
+- **Einschreibung:** studentId, studiengangId, aktuellesSemester, status (AKTIV/ABGESCHLOSSEN/ABGEBROCHEN)

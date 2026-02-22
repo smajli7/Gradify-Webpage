@@ -1,0 +1,90 @@
+---
+title: 'Rollen & Berechtigungen'
+description: '5 Benutzerrollen mit abgestuften Berechtigungen, vom Admin bis zum Studierenden.'
+date: 2026-02-11
+order: 11
+tags: ['Sicherheit', 'Rollen', 'Übersicht']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Das Gradify-System implementiert **rollenbasierte Zugriffskontrolle (RBAC)** mit 5 Benutzerrollen. Jede Rolle hat klar definierte Berechtigungen.
+
+## Rollenübersicht
+
+| ID | Rolle | Berechtigungen |
+|----|-------|---------------|
+| 5 | **ROLE_ADMIN** | Vollzugriff auf alle Funktionen |
+| 6 | **ROLE_HOCHSCHUL_VERWALTER** | Mandant-, Studiengangs- und Modulverwaltung |
+| 3 | **ROLE_PRUEFUNGSAMT** | Notenvalidierung, Freigabe, Berechnungen |
+| 2 | **ROLE_LEHRENDER** | Notenerfassung für zugewiesene Module |
+| 1 | **ROLE_STUDENT** | Eigene Noten und Fortschritt einsehen |
+
+## Detaillierte Berechtigungen
+
+### ROLE_ADMIN (System-Administrator)
+
+- Benutzer und Studenten erstellen, bearbeiten, löschen
+- Rollen zuweisen und entziehen
+- Mandanten erstellen und verwalten
+- Alle Daten aller Mandanten einsehen
+- System-Status und Audit-Logs prüfen
+- CSV-Import/Export
+
+### ROLE_HOCHSCHUL_VERWALTER (Hochschulverwalter)
+
+- Studiengangs- und Modulverwaltung im eigenen Mandanten
+- Dozenten-Modul-Zuweisungen pflegen
+- Studenten verwalten und einschreiben
+- Keine direkte Notenerfassung
+
+### ROLE_PRUEFUNGSAMT (Prüfungsamt)
+
+- Erfasste Noten **validieren** (ERFASST → VALIDIERT)
+- Validierte Noten **freigeben** (VALIDIERT → FREIGEGEBEN)
+- Noten **ablehnen** (zurück zur Korrektur)
+- Gesamtnotenberechnungen anstoßen und prüfen
+- Studierendenakten einsehen
+- Notenexport und Audit-Logs
+
+### ROLE_LEHRENDER (Dozent/Professor)
+
+- Noten für **zugewiesene Module** erfassen und korrigieren
+- Nur eigene Modulzuweisungen sichtbar
+- Kursstatistiken einsehen (Notenspiegel, Durchschnitt)
+- Keine Noten validieren oder freigeben
+
+### ROLE_STUDENT (Studierende)
+
+- **Eigene Noten** einsehen (nur freigegebene)
+- **Studienfortschritt** verfolgen (ECTS, bestandene Module)
+- **Studienplan** ansehen
+- Keine Daten anderer Studenten sichtbar
+
+## Berechtigungsmatrix
+
+| Funktion | Admin | Verwalter | Prüfungsamt | Lehrender | Student |
+|----------|:-----:|:---------:|:-----------:|:---------:|:-------:|
+| Benutzer verwalten | x | - | - | - | - |
+| Mandanten verwalten | x | - | - | - | - |
+| Studiengänge verwalten | x | x | - | - | - |
+| Module verwalten | x | x | - | - | - |
+| Dozenten zuweisen | x | x | - | - | - |
+| Studenten verwalten | x | x | x | - | - |
+| Einschreibungen | x | x | x | - | - |
+| Noten erfassen | x | - | - | x | - |
+| Noten validieren | x | - | x | - | - |
+| Noten freigeben | x | - | x | - | - |
+| Berechnungen | x | - | x | - | - |
+| Eigene Noten sehen | - | - | - | - | x |
+| Fortschritt sehen | - | - | - | - | x |
+| Audit-Log | x | - | x | - | - |
+| CSV Import/Export | x | x | x | - | - |
+
+## Technische Umsetzung
+
+- **JWT-Claims** enthalten Rollen als Array: `"roles": ["ROLE_ADMIN"]`
+- **Spring Security** prüft Rollen per `@PreAuthorize` auf Controller-Ebene
+- **Angular Guards** schützen Frontend-Routen basierend auf Rollen
+- **n:m-Beziehung** zwischen Benutzer und Rolle in der Datenbank

@@ -1,0 +1,87 @@
+---
+title: 'Berechnungs-Service'
+description: 'Automatische Gesamtnotenberechnung nach Prüfungsordnung, ereignisgesteuert über RabbitMQ mit gRPC-Datenabfrage.'
+date: 2026-02-15
+order: 7
+tags: ['Service', 'REST', 'gRPC', 'RabbitMQ']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Der **Berechnungs-Service** berechnet automatisch die Gesamtnoten gemäß der jeweiligen Prüfungsordnung. Er arbeitet **ereignisgesteuert**: Sobald der Noten-Service eine Notenänderung per RabbitMQ meldet, wird die Berechnung neu angestoßen.
+
+## Kernfunktionen
+
+- **Gesamtnotenberechnung:** Gewichtet oder arithmetisch gemischt nach PO
+- **Studienfortschritt:** ECTS-Fortschritt und bestandene Module
+- **Statistiken:** Durchschnitt über alle Studiengänge
+- **Ereignisgesteuert:** Automatische Neuberechnung bei Notenänderungen
+
+## Technologie
+
+- **Port (HTTP):** 8085
+- **Port (gRPC):** 9085
+- **Datenbanken:** `gradify_berechnung_{kuerzel}` (pro Mandant)
+- **gRPC-Clients:** Studiengang-Service (Regelwerk), Noten-Service (Noten)
+- **RabbitMQ:** Konsument von Notenänderungs-Events
+
+## Datenfluss
+
+```text
+RabbitMQ Event (note.*)
+        │
+        ▼
+Berechnungs-Service
+        │
+        ├──► Studiengang-Service (gRPC): GetRegelwerk, GetModulGewichtungen
+        │
+        ├──► Noten-Service (gRPC): GetNotenFuerBerechnung
+        │
+        ▼
+Berechnung durchführen → Ergebnis speichern
+```
+
+## REST-Endpunkte
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `GET` | `/api/berechnungen/einschreibung/{id}` | Gesamtnote |
+| `GET` | `/api/berechnungen/einschreibung/{id}/details` | Detailaufschlüsselung |
+| `GET` | `/api/berechnungen/einschreibung/{id}/fortschritt` | Studienfortschritt |
+| `POST` | `/api/berechnungen/einschreibung/{id}/berechnen` | Manuelle Neuberechnung |
+| `POST` | `/api/berechnungen/berechnen` | Vollständige Berechnung |
+| `GET` | `/api/berechnungen/statistik/durchschnitt` | Durchschnitt aller Studiengänge |
+| `GET` | `/api/berechnungen/berechnungsarten` | Verfügbare Formeln |
+| `GET` | `/api/berechnungen/grpc-status` | gRPC-Status |
+
+## Berechnungsarten
+
+### 1. Gewichtete Summe (Bioverfahrenstechnik BA)
+
+$$
+\text{Gesamtnote} = \frac{\sum_{i} (\text{Note}_i \times \text{Gewichtung}_i)}{\sum_{i} \text{Gewichtung}_i}
+$$
+
+### 2. Arithmetisch gemischt (Forschung Soziale Arbeit MA)
+
+$$
+\text{Gesamtnote} = \frac{2 \times \text{Note}_{\text{Thesis}} + 1 \times \text{Modulmittel}}{3}
+$$
+
+## Datenmodell
+
+### Berechnungsergebnis
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| einschreibungId | Long | Einschreibung (unique) |
+| gesamtnote | Decimal(2,1) | Gerundete Note |
+| gesamtnoteRoh | Decimal(4,3) | Ungerundeter Wert |
+| status | Enum | VORLAEUFIG / ENDGUELTIG |
+| moduleBestanden / moduleGesamt | int | Fortschritt |
+| ectsErreicht / ectsGesamt | int | ECTS-Stand |
+
+### ModulBerechnung
+
+Detaillierter Beitrag jedes Moduls mit Note, Gewichtung und gewichtetem Beitrag zur Gesamtnote.

@@ -1,0 +1,65 @@
+---
+title: 'API-Gateway'
+description: 'Spring Cloud Gateway als zentraler Eintrittspunkt mit Routing, CORS, Authentifizierungs-Header-Weiterleitung und GraphQL-Proxy.'
+date: 2026-02-20
+order: 2
+tags: ['Service', 'Gateway', 'Architektur']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Das **API-Gateway** ist der einzige von außen erreichbare Eintrittspunkt des Systems. Es basiert auf **Spring Cloud Gateway** und übernimmt folgende Aufgaben:
+
+- **Request-Routing** an die Backend-Services
+- **CORS-Handling** für Browser-Requests
+- **Authentifizierungs-Header-Weiterleitung** (JWT)
+- **GraphQL-Proxy** für `/graphql/{service}`-Endpunkte
+
+## Warum ein API-Gateway?
+
+| Vorteil | Beschreibung |
+|---------|-------------|
+| **Zentraler Einstiegspunkt** | Clients kennen nur eine URL (`localhost:8080`) |
+| **Entkopplung** | Backend-Services können intern umziehen/skalieren |
+| **Cross-Cutting Concerns** | CORS, Logging, Header-Forwarding an einer Stelle |
+| **Vereinfachte Konfiguration** | Frontend benötigt nur eine Base-URL |
+
+## Technologie
+
+- **Framework:** Spring Cloud Gateway 2023.0.x
+- **Port:** 8080
+- **Typ:** Reactive (Netty-basiert)
+
+## Routing-Konfiguration
+
+Das Gateway leitet Requests anhand der URL-Pfade weiter:
+
+| Pfad-Präfix | Ziel-Service | Port |
+|-------------|-------------|------|
+| `/api/auth/**` | Auth-Service | 8081 |
+| `/api/users/**`, `/api/students/**` | User-Service | 8082 |
+| `/api/mandanten/**`, `/api/studiengaenge/**`, `/api/einschreibungen/**`, `/api/module-zuweisungen/**`, `/api/import/**` | Studiengang-Service | 8083 |
+| `/api/noten/**` | Noten-Service | 8084 |
+| `/api/berechnungen/**` | Berechnungs-Service | 8085 |
+| `/graphql/user` | User-Service GraphQL | 8082 |
+| `/graphql/studiengang` | Studiengang-Service GraphQL | 8083 |
+| `/graphql/noten` | Noten-Service GraphQL | 8084 |
+
+## CORS-Konfiguration
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+```
+
+## Header-Weiterleitung
+
+Das Gateway leitet den `Authorization`-Header (JWT) an die Backend-Services weiter, ohne den Token selbst zu validieren. Die Validierung erfolgt in den jeweiligen Services.

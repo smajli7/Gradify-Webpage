@@ -1,0 +1,85 @@
+---
+title: 'Auth-Service'
+description: 'JWT-basierte Authentifizierung mit Access- & Refresh-Tokens, Login-Versuch-Tracking und gRPC-Integration.'
+date: 2026-02-19
+order: 3
+tags: ['Service', 'Sicherheit', 'JWT']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Der **Auth-Service** ist verantwortlich für die gesamte Authentifizierung im System. Er erzeugt und verwaltet JWT-Token (Access + Refresh) und kommuniziert per **gRPC** mit dem User-Service zur Validierung der Zugangsdaten.
+
+## Kernfunktionen
+
+- **Login/Logout:** Benutzeranmeldung mit Username und Passwort
+- **JWT-Token-Verwaltung:** Access-Token (kurzlebig) + Refresh-Token (langlebig)
+- **Token-Validierung:** Prüfung der Gültigkeit eines Access-Tokens
+- **Login-Versuch-Tracking:** Protokollierung erfolgreicher und fehlgeschlagener Logins
+
+## Technologie
+
+- **Framework:** Spring Boot 3.3.7 + Spring Security
+- **JWT-Library:** jjwt 0.12.3
+- **Port (HTTP):** 8081
+- **Datenbank:** `gradify_auth` (PostgreSQL)
+- **gRPC-Client:** Verbindung zum User-Service (Port 9082)
+
+## REST-Endpunkte
+
+| Methode | Endpunkt | Beschreibung |
+|---------|----------|-------------|
+| `POST` | `/api/auth/login` | Benutzer-Login |
+| `POST` | `/api/auth/refresh` | Access-Token erneuern |
+| `GET` | `/api/auth/validate` | Token validieren |
+| `GET` | `/api/auth/me` | Aktueller Benutzer aus Token |
+| `POST` | `/api/auth/logout` | Refresh-Token widerrufen |
+| `GET` | `/api/auth/grpc-status` | gRPC-Verbindungsstatus |
+
+## Login-Prozess
+
+```text
+Client → API-Gateway: POST /api/auth/login { username, password }
+API-Gateway → Auth-Service: Request weiterleiten
+Auth-Service → User-Service (gRPC): ValidateCredentials(username, password)
+User-Service → Auth-Service: { valid, userId, roles, mandantId }
+Auth-Service → Client: { accessToken, refreshToken, expiresIn }
+```
+
+## JWT-Token-Struktur
+
+**Access-Token (Payload):**
+```json
+{
+  "sub": "admin",
+  "userId": 1,
+  "roles": ["ROLE_ADMIN"],
+  "mandantId": 1,
+  "iat": 1708500000,
+  "exp": 1708503600
+}
+```
+
+## Datenmodell
+
+### RefreshToken
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| id | Long | Primärschlüssel |
+| benutzerId | Long | Benutzer-Referenz |
+| token | String(500) | Token-Wert (unique) |
+| gueltigBis | LocalDateTime | Ablaufzeitpunkt |
+| widerrufen | boolean | Widerrufen-Status |
+| ipAdresse | String(45) | IP bei Erstellung |
+
+### LoginVersuch
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| id | Long | Primärschlüssel |
+| benutzername | String(100) | Login-Name |
+| erfolgreich | boolean | Ergebnis |
+| fehlergrund | String(200) | Fehlergrund bei Misserfolg |
+| zeitpunkt | LocalDateTime | Zeitpunkt |

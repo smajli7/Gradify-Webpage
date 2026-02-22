@@ -1,0 +1,106 @@
+---
+title: 'Deployment (Docker & Kubernetes)'
+description: 'Drei Deployment-Optionen: Lokal, Docker Compose und Kubernetes. Multi-Tenant-fähig und produktionsbereit.'
+date: 2026-02-12
+order: 10
+tags: ['DevOps', 'Docker', 'Kubernetes']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Gradify bietet **drei Deployment-Optionen**, von der lokalen Entwicklung bis zum produktionsnahen Kubernetes-Cluster.
+
+## 1. Lokale Entwicklung
+
+```powershell
+.\start-all.ps1
+```
+
+Startet alle Services lokal mit eingebetteten PostgreSQL-Datenbanken und RabbitMQ.
+
+## 2. Docker Compose
+
+```powershell
+.\build-docker.ps1    # Docker-Images bauen
+.\docker-up.ps1       # Container starten
+```
+
+### Container-Übersicht
+
+| Container | Image | Ports |
+|-----------|-------|-------|
+| gradify-gateway | Custom | 8080 |
+| gradify-auth | Custom | 8081 |
+| gradify-user | Custom | 8082, 9082 |
+| gradify-studiengang | Custom | 8083, 9083 |
+| gradify-noten | Custom | 8084, 9084 |
+| gradify-berechnung | Custom | 8085, 9085 |
+| gradify-frontend | nginx | 4200 |
+| postgres | PostgreSQL 16 | 5432 |
+| rabbitmq | RabbitMQ 3.x | 5672, 15672 |
+
+### Infrastruktur-Services
+
+- **PostgreSQL 16:** Zentrale Datenbank-Instanz mit mehreren Datenbanken
+- **RabbitMQ:** Message Broker mit Management-UI (Port 15672)
+- **nginx:** Webserver für das Angular-Frontend
+
+## 3. Kubernetes
+
+```powershell
+.\k8s\deploy.ps1
+```
+
+### K8s-Architektur
+
+```text
+┌─────────────────────────────────────────────┐
+│              Kubernetes Cluster              │
+│                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │ Gateway  │  │   Auth   │  │   User   │  │
+│  │ Deploy.  │  │ Deploy.  │  │ Deploy.  │  │
+│  │ + Svc    │  │ + Svc    │  │ + Svc    │  │
+│  └──────────┘  └──────────┘  └──────────┘  │
+│                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │Studiengg.│  │  Noten   │  │Berechnung│  │
+│  │ Deploy.  │  │ Deploy.  │  │ Deploy.  │  │
+│  │ + Svc    │  │ + Svc    │  │ + Svc    │  │
+│  └──────────┘  └──────────┘  └──────────┘  │
+│                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+│  │ Frontend │  │PostgreSQL│  │ RabbitMQ │  │
+│  │ Deploy.  │  │StatefulS.│  │ Deploy.  │  │
+│  │ + Svc    │  │ + PVC    │  │ + Svc    │  │
+│  └──────────┘  └──────────┘  └──────────┘  │
+│                                              │
+│  ┌──────────────────────────────────────┐   │
+│  │         Init-Job (DB Setup)          │   │
+│  └──────────────────────────────────────┘   │
+└─────────────────────────────────────────────┘
+```
+
+### Kubernetes-Ressourcen
+
+| Ressource | Typ | Beschreibung |
+|-----------|-----|-------------|
+| Services | Deployment + Service | Je ein Pod pro Microservice |
+| PostgreSQL | StatefulSet + PVC | Persistente Datenbank |
+| RabbitMQ | Deployment + Service | Message Broker |
+| Init-Job | Job | Erstellt Datenbanken und Schemas |
+| ConfigMaps | ConfigMap | Service-Konfigurationen |
+| Secrets | Secret | Passwörter, JWT-Keys |
+
+### Multi-Tenant Ready
+
+Die Kubernetes-Konfiguration ist **Multi-Tenant-fähig**: Neue Mandanten können zur Laufzeit hinzugefügt werden, ohne den Cluster neu zu deployen. Die mandantenspezifischen Datenbanken werden automatisch angelegt.
+
+## Testing
+
+| Test-Art | Befehl | Beschreibung |
+|----------|--------|-------------|
+| Unit-Tests | `.\test\run-unit.ps1` | JUnit 5 + Mockito |
+| Integration | `.\test\run-integration-all.ps1` | Testcontainers |
+| E2E | `.\test\run-e2e.ps1` | Docker-basiert |

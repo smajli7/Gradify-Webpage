@@ -1,0 +1,97 @@
+---
+title: 'Frontend (Angular + CLI)'
+description: 'Angular 18 SPA mit Material Design, Apollo GraphQL, PWA-Unterstützung sowie PowerShell-CLI als nicht-grafisches UI.'
+date: 2026-02-14
+order: 8
+tags: ['Frontend', 'Angular', 'PWA', 'CLI']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Das Gradify-System bietet **zwei User Interfaces**:
+
+1. **Angular SPA:** Grafisches UI als Progressive Web App (PWA)
+2. **PowerShell CLI:** Nicht-grafisches UI (`gradify-cli.ps1`)
+
+## Angular Frontend
+
+### Technologie-Stack
+
+| Technologie | Version | Einsatz |
+|------------|---------|--------|
+| Angular | 18.2 | Framework |
+| Angular Material | 18.x | UI-Komponenten |
+| Apollo Angular | 7.0 | GraphQL-Client |
+| Chart.js | 4.x | Diagramme/Statistiken |
+| jsPDF | 4.x | PDF-Generierung |
+| Service Worker | - | PWA / Offline |
+| TypeScript | 5.4 | Programmiersprache |
+| nginx | - | Produktions-Webserver |
+
+### PWA-Features
+
+- **Installierbar:** Als App auf Desktop und Mobile
+- **Offline-fähig:** Service Worker cached statische Assets
+- **Responsive:** Optimiert für Desktop und Mobile
+
+### Rollenbasierte Navigation
+
+Jede Rolle sieht nur die für sie relevanten Menüpunkte und Funktionen:
+
+| Rolle | Sichtbare Bereiche |
+|-------|-------------------|
+| Admin | Alles: Benutzer, Mandanten, Studiengänge, Module, Noten, Berechnungen |
+| Hochschulverwalter | Mandant, Studiengänge, Module, Studenten, Zuweisungen |
+| Prüfungsamt | Noten validieren/freigeben, Berechnungen, Studenten |
+| Lehrender | Eigene Module, Noten erfassen, Statistiken |
+| Student | Eigene Noten, Studienfortschritt, Studienplan |
+
+### Kommunikation
+
+Das Frontend nutzt sowohl **REST** als auch **GraphQL** über den API-Gateway:
+
+- **REST** für CRUD-Operationen und Statusänderungen
+- **GraphQL** für komplexe Dashboards und verschachtelte Datenabfragen
+- Alle Requests gehen über `http://localhost:8080` (API-Gateway)
+
+## PowerShell CLI
+
+Das CLI (`gradify-cli.ps1`) erfüllt die Pflichtanforderung eines **nicht-grafischen UI**:
+
+### Features
+
+- **Menügesteuert:** Interaktive Menüführung mit Rollenkontext
+- **Vollständig:** Alle Funktionen des Systems sind zugänglich
+- **Statusleiste:** Zeigt aktuellen Benutzer, Rolle, Mandant
+- **Eingabevalidierung:** Prüfung von Noten, Datumsformaten, Zahlen
+- **Fehlerbehandlung:** Benutzerfreundliche Fehlermeldungen
+
+### Rollenbasierte Menüs
+
+```text
+═══════════════════════════════════
+       GRADIFY - Hauptmenü
+  Benutzer: admin | Rolle: ADMIN
+  Mandant: THM
+═══════════════════════════════════
+  [1] Benutzerverwaltung
+  [2] Studentenverwaltung
+  [3] Mandantenverwaltung
+  [4] Studiengangsverwaltung
+  [5] Einschreibungsverwaltung
+  [6] Notenverwaltung
+  [7] Berechnungen
+  [8] Modulzuweisungen
+  [9] Import/Export
+  [10] Audit-Log
+  [11] System-Status
+  [0] Abmelden
+═══════════════════════════════════
+```
+
+### Technische Details
+
+- Nutzt `Invoke-RestMethod` für REST-API-Aufrufe
+- JWT-Token-Management für Authentifizierung
+- Verbindung zum API-Gateway auf `http://localhost:8080`

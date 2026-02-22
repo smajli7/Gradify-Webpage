@@ -1,0 +1,493 @@
+---
+import BlogCard from '@/components/BlogCard.astro'
+import Link from '@/components/Link.astro'
+import PageHead from '@/components/PageHead.astro'
+import Skills from '@/components/react/Skills'
+import { ErrorBoundary } from '@/components/react/ErrorBoundary'
+import { buttonVariants } from '@/components/ui/button'
+import Layout from '@/layouts/Layout.astro'
+import { Icon } from 'astro-icon/components'
+import { getRecentPosts } from '@/lib/data-utils'
+import { cn } from '@/lib/utils'
+import { SITE } from '@/consts'
+import { DEMO_PASSWORD, demoNutzer, getRolleLabel } from '@/data/demo-nutzer'
+
+let latestPosts: Awaited<ReturnType<typeof getRecentPosts>> = []
+try {
+  latestPosts = await getRecentPosts(6)
+} catch (error) {
+  console.error('Error fetching recent posts:', error)
+}
+
+const services = [
+  { name: 'API-Gateway', port: '8080', icon: 'lucide:route', desc: 'Zentraler Eintrittspunkt, Routing, CORS', protocols: ['REST'], color: 'from-orange-500/20 to-orange-500/5' },
+  { name: 'Auth-Service', port: '8081', icon: 'lucide:key', desc: 'Login, JWT Access & Refresh Tokens', protocols: ['REST', 'gRPC'], color: 'from-red-500/20 to-red-500/5' },
+  { name: 'User-Service', port: '8082', icon: 'lucide:users', desc: 'Benutzer, Rollen, Studenten, CSV', protocols: ['REST', 'GraphQL', 'gRPC'], color: 'from-blue-500/20 to-blue-500/5' },
+  { name: 'Studiengang-Service', port: '8083', icon: 'lucide:graduation-cap', desc: 'Mandanten, Module, POs, Einschreibungen', protocols: ['REST', 'GraphQL', 'gRPC'], color: 'from-violet-500/20 to-violet-500/5' },
+  { name: 'Noten-Service', port: '8084', icon: 'lucide:file-check', desc: 'Notenerfassung, Validierung, Freigabe', protocols: ['REST', 'GraphQL', 'gRPC', 'MQ'], color: 'from-emerald-500/20 to-emerald-500/5' },
+  { name: 'Berechnungs-Service', port: '8085', icon: 'lucide:calculator', desc: 'Gesamtnotenberechnung nach PO', protocols: ['REST', 'gRPC', 'MQ'], color: 'from-amber-500/20 to-amber-500/5' },
+  { name: 'Frontend', port: '4200', icon: 'lucide:monitor', desc: 'Angular 18 SPA + PWA', protocols: ['REST', 'GraphQL'], color: 'from-pink-500/20 to-pink-500/5' },
+]
+
+const roles = [
+  { name: 'Admin', desc: 'Vollzugriff, Benutzerverwaltung, Mandanten', icon: 'lucide:crown', bg: 'bg-red-500/10', text: 'text-red-500', border: 'border-red-500/20' },
+  { name: 'Hochschulverwalter', desc: 'Mandantenverwaltung, Modulzuweisungen', icon: 'lucide:building-2', bg: 'bg-violet-500/10', text: 'text-violet-500', border: 'border-violet-500/20' },
+  { name: 'Prüfungsamt', desc: 'Notenvalidierung, Freigabe, Berechnungen', icon: 'lucide:stamp', bg: 'bg-blue-500/10', text: 'text-blue-500', border: 'border-blue-500/20' },
+  { name: 'Lehrender', desc: 'Notenerfassung für zugewiesene Module', icon: 'lucide:book-open', bg: 'bg-emerald-500/10', text: 'text-emerald-500', border: 'border-emerald-500/20' },
+  { name: 'Student', desc: 'Eigene Noten & Fortschritt einsehen', icon: 'lucide:user', bg: 'bg-amber-500/10', text: 'text-amber-500', border: 'border-amber-500/20' },
+]
+
+const stats = [
+  { value: '7', label: 'Microservices', icon: 'lucide:boxes' },
+  { value: '4', label: 'Protokolle', icon: 'lucide:cable' },
+  { value: '5', label: 'Benutzerrollen', icon: 'lucide:shield' },
+  { value: '3', label: 'Studiengänge', icon: 'lucide:graduation-cap' },
+  { value: '64+', label: 'REST-Endpunkte', icon: 'lucide:globe' },
+  { value: '22+', label: 'GraphQL Ops', icon: 'lucide:braces' },
+]
+
+const protocols = [
+  { name: 'REST', count: '64+ Endpunkte', desc: 'CRUD, Statusänderungen', icon: 'lucide:globe', color: 'text-blue-500' },
+  { name: 'GraphQL', count: '22+ Operationen', desc: 'Flexible Dashboard-Queries', icon: 'lucide:braces', color: 'text-pink-500' },
+  { name: 'gRPC', count: '10+ Methoden', desc: 'Service-zu-Service, binär', icon: 'lucide:zap', color: 'text-amber-500' },
+  { name: 'RabbitMQ', count: '4 Event-Typen', desc: 'Asynchrone Noten-Events', icon: 'lucide:radio', color: 'text-emerald-500' },
+]
+---
+<Layout class="max-w-5xl" transition:persist="home-layout">
+  <PageHead slot="head" title={SITE.title} fullTitle={true} />
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden rounded-2xl border border-border/50">
+    <div class="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-transparent" aria-hidden="true"></div>
+    <div class="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" aria-hidden="true"></div>
+    
+    <div class="relative z-10 p-8 md:p-12 lg:p-16">
+      <div class="max-w-2xl space-y-6">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-medium text-primary">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+          Frankfurt UAS | WiSe 2025/26
+        </div>
+        <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.08]">
+          <span class="text-primary">Gradify</span>
+        </h1>
+        <p class="text-muted-foreground text-base md:text-lg leading-relaxed max-w-xl">
+          Web-basiertes Notenverwaltungssystem für Hochschulen. Microservice-Architektur mit
+          Spring Boot, Angular und Kubernetes.
+        </p>
+        
+        <div class="flex flex-wrap items-center gap-3 pt-1">
+          <Link href="/blog" class={buttonVariants({ variant: 'default', size: 'lg' })}>
+            Dokumentation
+            <Icon name="lucide:arrow-right" class="size-4" />
+          </Link>
+          <Link href="/about" class={buttonVariants({ variant: 'outline', size: 'lg' })}>
+            Team & Projekt
+          </Link>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Schnellnavigation (Anker) -->
+  <nav class="mt-6 flex flex-wrap gap-2 text-sm" aria-label="Schnellnavigation">
+    <a href="#nutzer-liste" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Nutzer-Liste</a>
+    <a href="#anwendung-starten" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Anwendung starten</a>
+    <a href="#microservices" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Microservices</a>
+    <a href="#dokumentation" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Dokumentation</a>
+    <a href="/about#reflexion" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Reflexion</a>
+  </nav>
+
+  <!-- Nutzer-Liste (Demo-Zugänge) -->
+  <section class="mt-8" id="nutzer-liste" aria-labelledby="nutzer-liste-heading">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 id="nutzer-liste-heading" class="text-xl font-semibold">Nutzer-Liste</h2>
+        <p class="text-sm text-muted-foreground mt-1">Demo-Zugänge für alle Rollen – ein Passwort für alle Nutzer.</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5" data-demo-password={DEMO_PASSWORD}>
+        <Icon name="lucide:key-round" class="size-4 text-primary shrink-0" />
+        <span class="text-xs text-muted-foreground">Passwort für alle:</span>
+        <code class="text-sm font-mono font-semibold text-primary select-all">{DEMO_PASSWORD}</code>
+        <button
+          type="button"
+          id="copy-password-btn"
+          class="ml-1 rounded-md border border-primary/30 bg-background px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          aria-label="Passwort in Zwischenablage kopieren"
+        >
+          Kopieren
+        </button>
+      </div>
+    </div>
+    <div class="mb-3 flex flex-wrap items-center gap-3">
+      <label for="nutzer-filter-rolle" class="text-xs text-muted-foreground">Rolle:</label>
+      <select id="nutzer-filter-rolle" class="rounded-md border border-border/50 bg-muted/30 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Nach Rolle filtern">
+        <option value="">Alle</option>
+        <option value="ADMIN">Admin</option>
+        <option value="HOCHSCHUL_VERWALTER">Hochschulverwalter</option>
+        <option value="PRUEFUNGSAMT">Prüfungsamt</option>
+        <option value="LEHRENDER">Lehrender</option>
+        <option value="STUDENT">Student</option>
+      </select>
+      <label for="nutzer-suche" class="text-xs text-muted-foreground">Suche:</label>
+      <input type="search" id="nutzer-suche" placeholder="Benutzername oder Name…" class="min-w-[140px] rounded-md border border-border/50 bg-muted/30 px-2 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" aria-label="Nutzer durchsuchen" />
+    </div>
+    <div class="rounded-xl border border-border/50 overflow-hidden bg-muted/20">
+      <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+        <table class="w-full text-sm border-collapse" id="nutzer-tabelle">
+          <caption class="sr-only">Demo-Nutzer und Rollen mit einheitlichem Passwort</caption>
+          <thead class="sticky top-0 z-10 bg-muted/80 backdrop-blur-sm border-b border-border/50">
+            <tr class="text-left text-muted-foreground">
+              <th scope="col" class="px-4 py-3 font-medium">Benutzername</th>
+              <th scope="col" class="px-4 py-3 font-medium">Rolle</th>
+              <th scope="col" class="px-4 py-3 font-medium">Name</th>
+              <th scope="col" class="px-4 py-3 font-medium hidden sm:table-cell">Studiengang</th>
+              <th scope="col" class="px-4 py-3 font-medium w-16 text-center hidden md:table-cell">Sem.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {demoNutzer.map((n) => (
+              <tr class="nutzer-row border-b border-border/30 hover:bg-primary/5 transition-colors" data-rolle={n.rolle} data-benutzername={n.benutzername.toLowerCase()} data-name={`${n.vorname} ${n.nachname}`.toLowerCase()}>
+                <td class="px-4 py-2.5 font-mono text-foreground">{n.benutzername}</td>
+                <td class="px-4 py-2.5">
+                  <span class={cn(
+                    'inline-flex px-2 py-0.5 rounded-md text-[11px] font-medium',
+                    n.rolle === 'ADMIN' && 'bg-red-500/15 text-red-600 dark:text-red-400',
+                    n.rolle === 'HOCHSCHUL_VERWALTER' && 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+                    n.rolle === 'PRUEFUNGSAMT' && 'bg-blue-500/15 text-blue-600 dark:text-blue-400',
+                    n.rolle === 'LEHRENDER' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+                    n.rolle === 'STUDENT' && 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                  )}>
+                    {getRolleLabel(n.rolle)}
+                  </span>
+                </td>
+                <td class="px-4 py-2.5 text-muted-foreground">{n.vorname} {n.nachname}</td>
+                <td class="px-4 py-2.5 text-muted-foreground hidden sm:table-cell text-xs">{n.studiengang || '–'}</td>
+                <td class="px-4 py-2.5 text-center text-muted-foreground hidden md:table-cell text-xs">{n.semester || '–'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-muted-foreground sm:hidden">Auf kleinen Bildschirmen: Tabelle horizontal scrollbar.</p>
+    <script is:inline define:vars={{ DEMO_PASSWORD }}>
+      (function() {
+        var btn = document.getElementById('copy-password-btn')
+        var select = document.getElementById('nutzer-filter-rolle')
+        var search = document.getElementById('nutzer-suche')
+        if (btn) {
+          btn.addEventListener('click', function() {
+            if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(DEMO_PASSWORD).then(function() {
+                btn.textContent = 'Kopiert!'
+                setTimeout(function() { btn.textContent = 'Kopieren' }, 2000)
+              })
+            } else {
+              btn.textContent = 'Kopiert!'
+              setTimeout(function() { btn.textContent = 'Kopieren' }, 2000)
+            }
+          })
+        }
+        function filterRows() {
+          var role = select ? select.value : ''
+          var q = (search && search.value) ? search.value.trim().toLowerCase() : ''
+          var rows = document.querySelectorAll('.nutzer-row')
+          rows.forEach(function(row) {
+            var r = row.getAttribute('data-rolle')
+            var ben = row.getAttribute('data-benutzername') || ''
+            var name = row.getAttribute('data-name') || ''
+            var roleMatch = !role || r === role
+            var searchMatch = !q || ben.indexOf(q) >= 0 || name.indexOf(q) >= 0
+            row.style.display = (roleMatch && searchMatch) ? '' : 'none'
+          })
+        }
+        if (select) select.addEventListener('change', filterRows)
+        if (search) search.addEventListener('input', filterRows)
+      })()
+    </script>
+  </section>
+
+  <!-- Anwendung starten (3 Launch-Typen) -->
+  <section class="mt-8" id="anwendung-starten" aria-labelledby="anwendung-starten-heading">
+    <div class="mb-6">
+      <h2 id="anwendung-starten-heading" class="text-xl font-semibold">Anwendung starten</h2>
+      <p class="text-sm text-muted-foreground mt-1">Gradify bietet <strong>3 Launch-Typen</strong> – je nach Umgebung und Ziel. Ausführliche Anleitung: <a href="https://github.com/your-org/webapp-http-200#schnellstart" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">README</a> bzw. <code class="text-xs">Video_Tutorial.md</code> im Repository.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="rounded-xl border border-border/50 p-5 hover:border-primary/30 transition-colors bg-muted/20">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+            <Icon name="lucide:terminal" class="size-4 text-primary" />
+          </div>
+          <h3 class="font-semibold text-sm">1. Lokal (Konsole)</h3>
+        </div>
+        <p class="text-xs text-muted-foreground mb-3">Java 17 · Maven · Node.js 20+ · Docker</p>
+        <p class="text-xs font-mono text-foreground/90 mb-1">Erststart:</p>
+        <pre class="text-[11px] font-mono bg-muted/60 rounded-md p-2 overflow-x-auto"><code>.\start-all.ps1</code></pre>
+        <p class="text-xs font-mono text-foreground/90 mb-1 mt-2">Neustart:</p>
+        <pre class="text-[11px] font-mono bg-muted/60 rounded-md p-2 overflow-x-auto"><code>.\start-simple.ps1</code></pre>
+        <p class="text-[10px] text-muted-foreground mt-2">Frontend: <code class="font-mono">cd gradify-frontend && npm start</code></p>
+      </div>
+
+      <div class="rounded-xl border border-border/50 p-5 hover:border-primary/30 transition-colors bg-muted/20">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+            <Icon name="lucide:container" class="size-4 text-primary" />
+          </div>
+          <h3 class="font-semibold text-sm">2. Docker</h3>
+        </div>
+        <p class="text-xs text-muted-foreground mb-3">Docker & Docker Compose</p>
+        <p class="text-xs font-mono text-foreground/90 mb-1">Images bauen:</p>
+        <pre class="text-[11px] font-mono bg-muted/60 rounded-md p-2 overflow-x-auto"><code>.\build-docker.ps1</code></pre>
+        <p class="text-xs font-mono text-foreground/90 mb-1 mt-2">Container starten:</p>
+        <pre class="text-[11px] font-mono bg-muted/60 rounded-md p-2 overflow-x-auto"><code>.\docker-up.ps1</code></pre>
+        <p class="text-[10px] text-muted-foreground mt-2">Stoppen: <code class="font-mono">.\docker-down.ps1</code></p>
+      </div>
+
+      <div class="rounded-xl border border-border/50 p-5 hover:border-primary/30 transition-colors bg-muted/20">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+            <Icon name="lucide:boxes" class="size-4 text-primary" />
+          </div>
+          <h3 class="font-semibold text-sm">3. Kubernetes</h3>
+        </div>
+        <p class="text-xs text-muted-foreground mb-3">Docker Desktop mit K8s · kubectl</p>
+        <p class="text-xs font-mono text-foreground/90 mb-1">Deploy:</p>
+        <pre class="text-[11px] font-mono bg-muted/60 rounded-md p-2 overflow-x-auto"><code>.\k8s\deploy.ps1</code></pre>
+        <p class="text-[10px] text-muted-foreground mt-2">Status: <code class="font-mono">.\k8s\deploy.ps1 -Status</code></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="mt-6">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      {stats.map((stat) => (
+        <div class="rounded-xl border border-border/50 bg-muted/30 p-4 text-center hover:border-primary/30 transition-colors">
+          <div class="flex justify-center mb-2">
+            <Icon name={stat.icon} class="size-4 text-primary" />
+          </div>
+          <div class="text-2xl font-bold text-foreground">{stat.value}</div>
+          <div class="text-[11px] text-muted-foreground mt-0.5">{stat.label}</div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Microservices -->
+  <section class="mt-12" id="microservices" aria-labelledby="microservices-heading">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 id="microservices-heading" class="text-xl font-semibold">Microservices</h2>
+        <p class="text-sm text-muted-foreground mt-1">7 unabhängige Services mit eigener Datenhaltung</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {services.map((service) => (
+        <div class={`group relative rounded-xl border border-border/50 overflow-hidden hover:border-primary/40 transition-all duration-200`}>
+          <div class={`absolute inset-0 bg-gradient-to-br ${service.color} opacity-0 group-hover:opacity-100 transition-opacity`} aria-hidden="true"></div>
+          <div class="relative p-5">
+            <div class="flex items-start justify-between mb-3">
+              <div class="w-10 h-10 rounded-lg bg-muted/60 flex items-center justify-center">
+                <Icon name={service.icon} class="size-5 text-primary" />
+              </div>
+              <span class="text-[10px] font-mono text-muted-foreground bg-muted/60 px-2 py-1 rounded-md">:{service.port}</span>
+            </div>
+            <h3 class="font-semibold text-sm mb-1">{service.name}</h3>
+            <p class="text-xs text-muted-foreground leading-relaxed mb-3">{service.desc}</p>
+            <div class="flex flex-wrap gap-1.5">
+              {service.protocols.map((p) => (
+                <span class={`text-[9px] font-medium px-1.5 py-0.5 rounded ${
+                  p === 'REST' ? 'bg-blue-500/10 text-blue-500' :
+                  p === 'GraphQL' ? 'bg-pink-500/10 text-pink-500' :
+                  p === 'gRPC' ? 'bg-amber-500/10 text-amber-500' :
+                  'bg-emerald-500/10 text-emerald-500'
+                }`}>{p}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Kommunikation -->
+  <section class="mt-12">
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold">Kommunikation</h2>
+      <p class="text-sm text-muted-foreground mt-1">4 Protokolle für verschiedene Anforderungen</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {protocols.map((proto) => (
+        <div class="rounded-xl border border-border/50 p-5 hover:border-primary/30 transition-colors">
+          <Icon name={proto.icon} class={`size-5 ${proto.color} mb-3`} />
+          <h3 class="font-semibold text-sm">{proto.name}</h3>
+          <p class="text-xs text-primary font-medium mt-1">{proto.count}</p>
+          <p class="text-xs text-muted-foreground mt-1">{proto.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Rollen -->
+  <section class="mt-12">
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold">Benutzerrollen</h2>
+      <p class="text-sm text-muted-foreground mt-1">5 Rollen mit abgestuften Berechtigungen</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {roles.map((role) => (
+        <div class={`rounded-xl border ${role.border} ${role.bg} p-4 text-center hover:scale-[1.02] transition-transform`}>
+          <div class={`w-10 h-10 rounded-full ${role.bg} ${role.text} flex items-center justify-center mx-auto mb-3`}>
+            <Icon name={role.icon} class="size-5" />
+          </div>
+          <h3 class="font-semibold text-xs">{role.name}</h3>
+          <p class="text-[10px] text-muted-foreground mt-1 leading-relaxed">{role.desc}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Workflow -->
+  <section class="mt-12">
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold">Noten-Workflow</h2>
+      <p class="text-sm text-muted-foreground mt-1">3-stufiger Validierungsprozess</p>
+    </div>
+
+    <div class="rounded-xl border border-border/50 p-6 sm:p-8">
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-0">
+        <div class="flex flex-col items-center gap-2 text-center">
+          <div class="w-14 h-14 rounded-full bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center">
+            <Icon name="lucide:pen-line" class="size-6 text-amber-500" />
+          </div>
+          <div>
+            <div class="text-sm font-semibold">Erfasst</div>
+            <div class="text-[10px] text-muted-foreground">Lehrender</div>
+          </div>
+        </div>
+        
+        <div class="hidden sm:block w-16 h-px bg-gradient-to-r from-amber-500/50 to-blue-500/50"></div>
+        <Icon name="lucide:arrow-down" class="size-4 text-muted-foreground sm:hidden" />
+        
+        <div class="flex flex-col items-center gap-2 text-center">
+          <div class="w-14 h-14 rounded-full bg-blue-500/10 border-2 border-blue-500/30 flex items-center justify-center">
+            <Icon name="lucide:check" class="size-6 text-blue-500" />
+          </div>
+          <div>
+            <div class="text-sm font-semibold">Validiert</div>
+            <div class="text-[10px] text-muted-foreground">Prüfungsamt</div>
+          </div>
+        </div>
+
+        <div class="hidden sm:block w-16 h-px bg-gradient-to-r from-blue-500/50 to-emerald-500/50"></div>
+        <Icon name="lucide:arrow-down" class="size-4 text-muted-foreground sm:hidden" />
+
+        <div class="flex flex-col items-center gap-2 text-center">
+          <div class="w-14 h-14 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 flex items-center justify-center">
+            <Icon name="lucide:check-check" class="size-6 text-emerald-500" />
+          </div>
+          <div>
+            <div class="text-sm font-semibold">Freigegeben</div>
+            <div class="text-[10px] text-muted-foreground">Prüfungsamt</div>
+          </div>
+        </div>
+
+        <div class="hidden sm:block w-8"></div>
+
+        <div class="flex flex-col items-center gap-2 text-center opacity-50">
+          <div class="w-14 h-14 rounded-full bg-red-500/10 border-2 border-red-500/20 flex items-center justify-center">
+            <Icon name="lucide:x" class="size-6 text-red-500" />
+          </div>
+          <div>
+            <div class="text-sm font-semibold">Abgelehnt</div>
+            <div class="text-[10px] text-muted-foreground">Zurück zu Erfasst</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bonus Features -->
+  <section class="mt-12">
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold">Bonus-Features</h2>
+      <p class="text-sm text-muted-foreground mt-1">Zusätzlich implementiert</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {[
+        { title: 'API-Gateway', desc: 'Spring Cloud Gateway als zentraler Eintrittspunkt', icon: 'lucide:route' },
+        { title: 'Auth-Service', desc: 'JWT-basierte Authentifizierung mit Token-Refresh', icon: 'lucide:key' },
+        { title: 'Message Queue', desc: 'RabbitMQ für asynchrone Noten-Events', icon: 'lucide:radio' },
+        { title: 'Grafische UI', desc: 'Angular 18 SPA + Progressive Web App', icon: 'lucide:smartphone' },
+        { title: 'Docker & K8s', desc: 'Deployment mit Docker Compose und Kubernetes', icon: 'lucide:container' },
+        { title: 'Multi-Tenancy', desc: 'Mandantenfähigkeit mit separaten Datenbanken', icon: 'lucide:building' },
+      ].map((feature) => (
+        <div class="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 hover:bg-primary/8 transition-colors">
+          <div class="flex-shrink-0 w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+            <Icon name={feature.icon} class="size-4 text-primary" />
+          </div>
+          <div>
+            <h3 class="font-semibold text-sm">{feature.title}</h3>
+            <p class="text-xs text-muted-foreground mt-0.5">{feature.desc}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="mt-12">
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold">Tech Stack</h2>
+      <p class="text-sm text-muted-foreground mt-1">Technologien und Frameworks</p>
+    </div>
+    <ErrorBoundary client:load transition:persist="skills-error-boundary">
+      <Skills client:load transition:persist="skills-section" />
+    </ErrorBoundary>
+  </section>
+
+  <!-- Dokumentation -->
+  {latestPosts && latestPosts.length > 0 && (
+    <section class="mt-12" id="dokumentation" aria-labelledby="dokumentation-heading">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 id="dokumentation-heading" class="text-xl font-semibold">Dokumentation</h2>
+          <p class="text-sm text-muted-foreground mt-1">Detaillierte Beschreibung aller Komponenten</p>
+        </div>
+        <Link 
+          href="/blog" 
+          class={buttonVariants({ variant: 'ghost' }) + ' hidden sm:flex items-center gap-1.5'}
+        >
+          Alle anzeigen
+          <Icon name="lucide:arrow-right" class="size-4" />
+        </Link>
+      </div>
+      
+      <div class="space-y-2">
+        {latestPosts.map((post) => (
+          <article>
+            <BlogCard entry={post} />
+          </article>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <!-- Footer Info -->
+  <section class="mt-16">
+    <div class="rounded-xl border border-border/50 bg-muted/20 p-8 text-center">
+      <p class="text-sm text-muted-foreground">
+        Frankfurt University of Applied Sciences | Modul: Web-basierte Anwendungssysteme | WiSe 2025/26
+      </p>
+      <p class="text-xs text-muted-foreground/60 mt-2">
+        Prof. Lehmann | Jakub Naruszko & Louisa Kristin Bahr | Abgabe: 23.02.2026
+      </p>
+    </div>
+  </section>
+</Layout>

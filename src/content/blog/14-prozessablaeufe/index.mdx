@@ -1,0 +1,163 @@
+---
+title: 'Prozessabläufe'
+description: 'End-to-End Prozesse: Login, Notenerfassung, Validierung & Freigabe, automatische Neuberechnung als Sequenzdarstellungen.'
+date: 2026-02-08
+order: 14
+tags: ['Architektur', 'Prozesse']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Dieses Dokument beschreibt die zentralen **End-to-End-Prozessabläufe** des Systems. Die Sequenzdarstellungen zeigen Service-Interaktionen, Zustandsübergänge und technische Verantwortlichkeiten.
+
+## 1. Login und Token-Ausgabe
+
+```text
+Client ──────► API-Gateway: POST /api/auth/login { username, password }
+                    │
+                    ▼
+              Auth-Service
+                    │
+                    │ gRPC: ValidateCredentials(username, password)
+                    ▼
+              User-Service ──► Auth-Service: { valid, userId, roles, mandantId }
+                    │
+                    ▼
+              Auth-Service: JWT generieren (Access + Refresh)
+                    │
+                    ▼
+              API-Gateway ──► Client: 200 OK { accessToken, refreshToken }
+```
+
+### Ablauf im Detail
+
+1. Client sendet Login-Request an Gateway
+2. Gateway leitet an Auth-Service weiter
+3. Auth-Service prüft Credentials per **gRPC** beim User-Service
+4. Bei Erfolg: JWT Access-Token + Refresh-Token erzeugen
+5. Login-Versuch wird protokolliert (erfolgreich/fehlgeschlagen)
+6. Tokens an Client zurückgeben
+
+### Sicherheitsaspekte
+
+- Passwörter werden **niemals** im Klartext übertragen (BCrypt-Hash im User-Service)
+- Access-Token ist **kurzlebig** (z.B. 1 Stunde)
+- Refresh-Token ist **langlebig** und kann widerrufen werden
+- Gateway validiert Token **nicht** selbst, jeder Service prüft eigenständig
+
+## 2. Notenerfassung mit automatischer Neuberechnung
+
+```text
+Lehrender ──► Frontend: Note erfassen (Modul, Student, Wert)
+                  │
+                  ▼
+            API-Gateway: POST /api/noten { einschreibungId, modulId, noteWert }
+                  │
+                  ▼
+            Noten-Service:
+                  ├── Validierung (Notenwert, Versuch, Berechtigung)
+                  ├── Note speichern (Status: ERFASST)
+                  ├── Audit-Eintrag erstellen
+                  └── RabbitMQ Event: note.created
+                           │
+                           ▼
+                     Berechnungs-Service:
+                           ├── gRPC → Studiengang-Service: GetRegelwerk
+                           ├── gRPC → Noten-Service: GetNotenFuerBerechnung
+                           ├── Gesamtnote berechnen
+                           └── Ergebnis speichern
+```
+
+### Fachliche Einordnung
+
+- Notenverwaltung und Berechnungslogik bleiben **technisch entkoppelt**
+- Die Gesamtnote wird **ereignisgesteuert** aktualisiert, ohne manuelle Folgeschritte
+- Die Berechnungsgrundlage (Regelwerk/Gewichtungen) wird zur **Laufzeit über gRPC** geladen
+
+## 3. Notenvalidierung und Freigabe
+
+```text
+Prüfungsamt ──► Frontend: Note validieren/freigeben
+                    │
+                    ▼
+              API-Gateway: POST /api/noten/{id}/validate
+                    │
+                    ▼
+              Noten-Service:
+                    ├── Status: ERFASST → VALIDIERT
+                    ├── Historieneintrag (Typ: VALIDIERT)
+                    └── RabbitMQ Event: note.validated
+                             │
+                             ▼
+              [Später: POST /api/noten/{id}/release]
+                    │
+                    ▼
+              Noten-Service:
+                    ├── Status: VALIDIERT → FREIGEGEBEN
+                    ├── Historieneintrag (Typ: FREIGEGEBEN)
+                    └── RabbitMQ Event: note.released
+                             │
+                             ▼
+                       Berechnungs-Service: Neuberechnung
+```
+
+### Ablehnung (Reject)
+
+```text
+Prüfungsamt ──► POST /api/noten/{id}/reject
+                    │
+                    ▼
+              Noten-Service:
+                    ├── Status: VALIDIERT → ERFASST (zurück zur Korrektur)
+                    ├── Historieneintrag (Typ: FREIGABE_ZURUECKGENOMMEN)
+                    └── Lehrender kann Note korrigieren
+```
+
+### Fachliche Einordnung
+
+- Der Notenstatus ist ein **fachlicher Workflow** (ERFASST → VALIDIERT → FREIGEGEBEN)
+- Jede Statusänderung wird **revisionssicher** in der Notenhistorie protokolliert
+- Rechenstände bleiben konsistent, weil Freigabe-Events nachgelagert verarbeitet werden
+
+## 4. Studienfortschritt abfragen
+
+```text
+Student ──► Frontend: Studienfortschritt anzeigen
+                │
+                ▼
+          API-Gateway: GET /api/berechnungen/einschreibung/{id}/fortschritt
+                │
+                ▼
+          Berechnungs-Service:
+                ├── Gespeichertes Berechnungsergebnis laden
+                └── Response: { gesamtnote, ectsErreicht, ectsGesamt,
+                                moduleBestanden, moduleGesamt, status }
+```
+
+## 5. CSV-Import von Studiengängen
+
+```text
+Admin ──► Frontend/CLI: CSV-Datei hochladen
+               │
+               ▼
+         API-Gateway: POST /api/import/studiengaenge (multipart/form-data)
+               │
+               ▼
+         Studiengang-Service:
+               ├── CSV parsen und validieren
+               ├── Studiengänge, Module, POs anlegen
+               ├── Fehler sammeln und zurückmelden
+               └── Response: { erfolgreiche: N, fehlerhafte: M, details: [...] }
+```
+
+## Zusammenfassung der Kommunikationswege
+
+| Prozess | Protokolle |
+|---------|-----------|
+| Login | REST → gRPC |
+| Notenerfassung | REST → RabbitMQ → gRPC |
+| Validierung/Freigabe | REST → RabbitMQ → gRPC |
+| Fortschritt abfragen | REST |
+| CSV-Import | REST |
+| Dashboard-Daten | GraphQL |

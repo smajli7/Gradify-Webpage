@@ -1,0 +1,152 @@
+---
+title: 'Datenmodell'
+description: 'Verteiltes Datenmodell über 6 Services mit eigener Datenhaltung, von Benutzer und Student bis Note und Berechnung.'
+date: 2026-02-10
+order: 12
+tags: ['Architektur', 'Datenbank']
+authors: ['jakub', 'louisa']
+---
+
+## Überblick
+
+Das Datenmodell ist auf die Microservices verteilt. Jeder Service hat die **alleinige Schreibhoheit** über seine Entitäten. Alle Primärschlüssel sind vom Typ `Long` (BIGSERIAL).
+
+## Entity-Beziehungen
+
+```text
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│     Mandant     │◄──1:n─│   Studiengang   │──1:1──│ Prüfungsordnung │
+└─────────────────┘       └────────┬────────┘       └────────┬────────┘
+                                   │                         │
+                                   │ n:m                     │ 1:n
+                                   │                         │
+                          ┌────────▼────────┐       ┌────────▼────────┐
+                          │     Student     │       │      Modul      │
+                          └────────┬────────┘       └────────┬────────┘
+                                   │                         │
+                                   │ 1:n                     │
+                                   │                         │
+                          ┌────────▼────────┐                │
+                          │  Einschreibung  │                │
+                          └────────┬────────┘                │
+                                   │                         │
+                                   │ 1:n                     │
+                                   │                         │
+                          ┌────────▼─────────────────────────┘
+                          │      Note       │
+                          └─────────────────┘
+
+┌─────────────────┐       ┌─────────────────┐
+│    Benutzer     │──n:m──│      Rolle      │
+└─────────────────┘       └─────────────────┘
+```
+
+## Auth-Service (`gradify_auth`)
+
+### RefreshToken
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| id | Long | PK |
+| benutzerId | Long | Benutzer-Referenz |
+| token | String(500) | Token-Wert (unique) |
+| gueltigBis | LocalDateTime | Ablauf |
+| widerrufen | boolean | Status |
+
+### LoginVersuch
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| benutzername | String(100) | Login-Name |
+| erfolgreich | boolean | Ergebnis |
+| fehlergrund | String(200) | Bei Misserfolg |
+| zeitpunkt | LocalDateTime | Zeitpunkt |
+
+## User-Service (`gradify_user`)
+
+### Benutzer
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| benutzername | String(50) | Unique |
+| email | String(100) | Unique |
+| passwortHash | String | BCrypt |
+| vorname / nachname | String(50) | Name |
+| mandantId | Long | Mandant-Referenz |
+| aktiv | boolean | Soft-Delete |
+| rollen | Set\<Rolle\> | n:m (EAGER) |
+
+### Student (erweitert Benutzer)
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| matrikelnummer | String(20) | Unique |
+| geburtsdatum | LocalDate | Geburtsdatum |
+| status | Enum | AKTIV, BEURLAUBT, EXMATRIKULIERT |
+
+### Vordefinierte Rollen
+
+| ID | Name | Beschreibung |
+|----|------|-------------|
+| 1 | ROLE_STUDENT | Studierende |
+| 2 | ROLE_LEHRENDER | Dozenten |
+| 3 | ROLE_PRUEFUNGSAMT | Prüfungsamt |
+| 5 | ROLE_ADMIN | Administratoren |
+| 6 | ROLE_HOCHSCHUL_VERWALTER | Verwalter |
+
+## Studiengang-Service (`gradify_studiengang_{kuerzel}`)
+
+### Schlüssel-Entitäten
+
+- **Mandant:** name, kuerzel (unique)
+- **Studiengang:** name, kuerzel, abschlussart, regelstudienzeit, gesamtEcts
+- **Prüfungsordnung:** version, gueltigAb/Bis, berechnungsart
+- **Modul:** modulNr, name, ects, gewichtung, pruefungsform, bewertungsart, modultyp
+- **Einschreibung:** studentId, studiengangId, aktuellesSemester, status
+
+### Prüfungsformen (Enum)
+
+KLAUSUR, HAUSARBEIT, MUENDLICH, PROJEKT, PORTFOLIO, PRAESENTATION, PRAXISBERICHT
+
+### Bewertungsarten (Enum)
+
+NOTE, BESTANDEN_NICHT_BESTANDEN
+
+## Noten-Service (`gradify_noten_{kuerzel}`)
+
+### Note
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| noteWert | Decimal(2,1) | 1,0 – 5,0 |
+| bestanden | Boolean | bestanden/nicht bestanden |
+| versuch | int | Prüfungsversuch (1–4) |
+| status | Enum | ERFASST, VALIDIERT, FREIGEGEBEN |
+
+### NotenHistorie (Audit)
+
+Jede Änderung wird protokolliert: Typ (ERSTELLT, NOTE_GEAENDERT, VALIDIERT, FREIGEGEBEN, STORNIERT), alter/neuer Wert, ändernder Benutzer.
+
+## Berechnungs-Service (`gradify_berechnung_{kuerzel}`)
+
+### Berechnungsergebnis
+
+| Attribut | Typ | Beschreibung |
+|----------|-----|-------------|
+| gesamtnote | Decimal(2,1) | Gerundete Note |
+| gesamtnoteRoh | Decimal(4,3) | Ungerundet |
+| status | Enum | VORLAEUFIG / ENDGUELTIG |
+| moduleBestanden / moduleGesamt | int | Fortschritt |
+| ectsErreicht / ectsGesamt | int | ECTS |
+
+## Notenskala
+
+| Note | Prädikat |
+|------|----------|
+| 1,0 / 1,3 | sehr gut |
+| 1,7 / 2,0 / 2,3 | gut |
+| 2,7 / 3,0 / 3,3 | befriedigend |
+| 3,7 / 4,0 | ausreichend |
+| 5,0 | nicht ausreichend |
+
+Bestanden: Note ≤ 4,0
