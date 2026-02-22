@@ -1,6 +1,6 @@
 ---
 // src/components/Link.astro
-import { cn } from '@/lib/utils'
+import { cn, withBase } from '@/lib/utils'
 
 interface Props {
   href: string
@@ -23,10 +23,11 @@ interface Props {
 const { href, external, class: className, underline, ...rest } = Astro.props
 
 const isExternal = external || href.startsWith('http')
+const resolvedHref = isExternal ? href : withBase(href)
 ---
 
 <a
-  href={href}
+  href={resolvedHref}
   target={isExternal ? '_blank' : '_self'}
   rel={isExternal ? 'noopener noreferrer' : undefined}
   class={cn(

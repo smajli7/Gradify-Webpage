@@ -6,6 +6,7 @@ import Link from '@/components/Link.astro'
 import { SITE } from '@/consts'
 import Layout from '@/layouts/Layout.astro'
 import { getAllPosts } from '@/lib/data-utils'
+import { withBase } from '@/lib/utils'
 import { Icon } from 'astro-icon/components'
 import type { PaginateFunction } from 'astro'
 import type { CollectionEntry } from 'astro:content'
@@ -135,7 +136,7 @@ function getPostColor(post: CollectionEntry<'blog'>) {
       <PaginationComponent
         currentPage={page.currentPage}
         totalPages={page.lastPage}
-        baseUrl="/blog/"
+        baseUrl={withBase('/blog/')}
         client:idle
       />
     </div>

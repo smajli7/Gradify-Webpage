@@ -1,6 +1,24 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
+/** Basis-URL aus Vite/Astro (z. B. /repo-name/ bei GitHub Pages). */
+function getBase(): string {
+  if (typeof import.meta === 'undefined' || !import.meta.env?.BASE_URL) return '/'
+  return import.meta.env.BASE_URL as string
+}
+
+/**
+ * Interne Pfade mit Base-URL versehen (für GitHub Pages: /tags → /repo-name/tags).
+ * Externe URLs (http/https) werden unverändert zurückgegeben.
+ */
+export function withBase(path: string): string {
+  if (path.startsWith('http')) return path
+  const base = getBase()
+  if (base === '/' || base === '') return path
+  const baseClean = base.endsWith('/') ? base.slice(0, -1) : base
+  return path.startsWith('#') ? path : baseClean + (path.startsWith('/') ? path : '/' + path)
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }

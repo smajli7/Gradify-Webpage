@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NAV_LINKS, APP_URL } from '@/consts'
+import { withBase } from '@/lib/utils'
 import { Menu, ExternalLink } from 'lucide-react'
 
 const MobileMenu = () => {
@@ -41,7 +42,7 @@ const MobileMenu = () => {
           return (
             <DropdownMenuItem key={item.href} asChild>
               <a
-                href={item.href}
+                href={isExternal ? item.href : withBase(item.href)}
                 target={isExternal ? '_blank' : '_self'}
                 rel={isExternal ? 'noopener noreferrer' : undefined}
                 className={`w-full text-lg font-medium capitalize flex items-center gap-2 ${

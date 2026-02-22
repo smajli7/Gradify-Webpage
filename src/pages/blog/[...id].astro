@@ -25,7 +25,7 @@ import {
   isSubpost,
   parseAuthors,
 } from '@/lib/data-utils'
-import { formatDate, getTagVariant } from '@/lib/utils'
+import { formatDate, getTagVariant, withBase } from '@/lib/utils'
 import { Icon } from 'astro-icon/components'
 import { Image } from 'astro:assets'
 import { render } from 'astro:content'
@@ -51,7 +51,7 @@ try {
 } catch (error) {
   console.error('Error rendering post content:', error)
   // Fallback: return 404 or error page
-  return Astro.redirect('/404')
+  return Astro.redirect(withBase('/404'))
 }
 
 // Error handling for authors parsing
@@ -235,7 +235,7 @@ try {
                 return (
                   <div class="group relative">
                     <a
-                      href={`/tags/${tag}`}
+                      href={withBase(`/tags/${tag}`)}
                       class={`${badgeVariants({ variant })} ${className || ''}`}
                     >
                       <Icon name="lucide:hash" class="size-3" />

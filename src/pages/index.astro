@@ -8,7 +8,7 @@ import { buttonVariants } from '@/components/ui/button'
 import Layout from '@/layouts/Layout.astro'
 import { Icon } from 'astro-icon/components'
 import { getRecentPosts } from '@/lib/data-utils'
-import { cn } from '@/lib/utils'
+import { cn, withBase } from '@/lib/utils'
 import { SITE } from '@/consts'
 import { DEMO_PASSWORD, demoNutzer, getRolleLabel } from '@/data/demo-nutzer'
 
@@ -94,7 +94,7 @@ const protocols = [
     <a href="#anwendung-starten" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Anwendung starten</a>
     <a href="#microservices" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Microservices</a>
     <a href="#dokumentation" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Dokumentation</a>
-    <a href="/about#reflexion" class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Reflexion</a>
+    <a href={withBase('/about#reflexion')} class="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">Reflexion</a>
   </nav>
 
   <!-- Nutzer-Liste (Demo-Zugänge) -->

@@ -1,5 +1,6 @@
 ---
 import { SITE, ANALYTICS, UMAMI } from '@/consts'
+import { withBase } from '@/lib/utils'
 import { ClientRouter } from 'astro:transitions'
 import Favicons from './Favicons.astro'
 
@@ -91,20 +92,20 @@ const ogImage = image || (cleanPathname ? new URL(`/og${cleanPathname}.png`, Ast
     media="(prefers-color-scheme: light)"
   />
 
-  <link rel="sitemap" href="/sitemap-index.xml" />
-  <link rel="manifest" href="/site.webmanifest" />
+  <link rel="sitemap" href={withBase('/sitemap-index.xml')} />
+  <link rel="manifest" href={withBase('/site.webmanifest')} />
   <link
     rel="alternate"
     type="application/rss+xml"
     title={SITE.title}
-    href={new URL('rss.xml', Astro.site)}
+    href={new URL(withBase('/rss.xml'), Astro.site).href}
   />
 
   <Favicons />
   
   <!-- Font Preloading to prevent layout shifts -->
-  <link rel="preload" href="/fonts/GeistVF.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
-  <link rel="preload" href="/fonts/GeistMonoVF.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+  <link rel="preload" href={withBase('/fonts/GeistVF.woff2')} as="font" type="font/woff2" crossorigin="anonymous" />
+  <link rel="preload" href={withBase('/fonts/GeistMonoVF.woff2')} as="font" type="font/woff2" crossorigin="anonymous" />
   
   <!-- Resource Hints for Performance -->
   {ANALYTICS.google && (
@@ -120,7 +121,7 @@ const ogImage = image || (cleanPathname ? new URL(`/og${cleanPathname}.png`, Ast
     </>
   )}
   <!-- Prefetch search index for faster search -->
-  <link rel="prefetch" href="/api/search-index.json" as="fetch" crossorigin="anonymous" />
+  <link rel="prefetch" href={withBase('/api/search-index.json')} as="fetch" crossorigin="anonymous" />
   
   <!-- Google Analytics -->
   {ANALYTICS.google && (
