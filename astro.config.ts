@@ -18,8 +18,13 @@ import { pluginLineNumbers } from '@expressive-code/plugin-line-numbers'
 
 import tailwindcss from '@tailwindcss/vite'
 
+// Für GitHub Pages: BASE_PATH z. B. /demo-website/ setzen (Repository-Name).
+// Lokal leer lassen → base: '/'
+const base = process.env.BASE_PATH || '/'
+
 export default defineConfig({
-  site: 'https://gradify.app',
+  site: process.env.GITHUB_PAGES_SITE || 'https://gradify.app',
+  base,
   integrations: [
     expressiveCode({
       themes: ['github-light', 'github-dark'],

@@ -113,6 +113,18 @@ Die genaue Anleitung zum Starten der Anwendung findest du auf der **Startseite**
 
 ---
 
+## Deploy auf GitHub Pages
+
+1. **Repository** auf GitHub pushen (z. B. `dein-user/demo-website`).
+2. **Pages aktivieren**: Im Repo **Settings → Pages** unter „Build and deployment“ bei **Source** „**GitHub Actions**“ wählen.
+3. **Push auf `main`** (oder manuell unter **Actions → Deploy to GitHub Pages → Run workflow**).
+
+Die Seite ist danach unter **`https://<dein-user>.github.io/<repo-name>/`** erreichbar (z. B. `https://dein-user.github.io/demo-website/`).
+
+Der Workflow (`.github/workflows/deploy-pages.yml`) baut die Seite mit dem passenden `base`-Pfad und deployed den Inhalt von `dist/`.
+
+---
+
 ## Lizenz & Team
 
 - **Lizenz**: MIT  
